@@ -31,6 +31,7 @@ import { commandInjectionLesson } from './lessons/web/command-injection.js';
 import { xssLesson } from './lessons/web/xss.js';
 import { csrfLesson } from './lessons/web/csrf.js';
 import { ssrfLesson } from './lessons/web/ssrf.js';
+import { jwtLesson } from './lessons/web/jwt.js';
 import { brokenAccessControlLesson } from './lessons/broken-access-control.js';
 import { sqlInjectionLesson } from './lessons/sql-injection.js';
 import { linuxPrivescLesson } from './lessons/linux-privesc.js';
@@ -80,6 +81,7 @@ const THEORY_LESSONS: Lesson[] = [
   xssLesson,
   csrfLesson,
   ssrfLesson,
+  jwtLesson,
 ];
 
 export const LESSONS: Lesson[] = [...READY_LESSONS, ...THEORY_LESSONS, ...PLANNED_LESSONS];
