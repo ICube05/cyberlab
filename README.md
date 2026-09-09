@@ -95,6 +95,29 @@ CyberLab teaches offensive techniques **exclusively for authorized contexts**: i
 
 Monorepo (pnpm workspaces): `packages/core` (pure domain), `packages/lab-engine`, `packages/ai`, `packages/curriculum`, `apps/server`, `apps/web`.
 
+## Portarsi dietro i progressi
+
+Il database dei progressi è `apps/server/data/cyberlab.db` (SQLite) ed è
+**committabile di proposito**: lezioni completate, mastery, quiz e tentativi
+viaggiano con il repo, così da un'altra macchina ritrovi le cose fatte.
+
+```bash
+git add apps/server/data/cyberlab.db
+git commit -m "progressi"
+```
+
+Il server ripiega il write-ahead log dentro il `.db` a ogni scrittura e quando
+si chiude, quindi il file che committi è completo: i sidecar `-wal` e `-shm`
+restano fuori da git perché sono temporanei, non perché servano.
+
+Due avvertenze oneste:
+
+- SQLite è **binario**: git non sa fonderlo. Se avanzi su due macchine senza
+  sincronizzare, un conflitto su questo file si risolve tenendo una delle due
+  versioni, non unendole. Committa e fai push quando finisci di studiare.
+- Il file contiene **i tuoi progressi**, non dati sensibili — ma se rendi
+  pubblico il repo, rendi pubblici anche quelli.
+
 ## Stato del lavoro
 
 `docs/HANDOFF.md` descrive cosa è fatto, perché, e cosa resta — scritto per chi riprende il lavoro senza il contesto della sessione precedente.

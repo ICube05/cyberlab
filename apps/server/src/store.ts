@@ -21,6 +21,11 @@ export class Store {
     this.#db = new DatabaseSync(path);
     this.#db.exec(`
       PRAGMA journal_mode = WAL;
+      -- Fold each commit straight back into the .db file. The default only
+      -- checkpoints once the log reaches 1000 pages, which for a database this
+      -- small is never — so the file you commit to git would lag behind your
+      -- actual progress. One user, tiny writes: the cost here is irrelevant.
+      PRAGMA wal_autocheckpoint = 1;
       CREATE TABLE IF NOT EXISTS progress (
         user_id TEXT PRIMARY KEY,
         document TEXT NOT NULL,
@@ -91,7 +96,24 @@ export class Store {
     return rows.map((r) => JSON.parse(r.document) as Attempt);
   }
 
+  /**
+   * Fold the write-ahead log back into the database file.
+   *
+   * In WAL mode a recent write lives in `cyberlab.db-wal`, not in
+   * `cyberlab.db`. Since the database is meant to be committed to git — so your
+   * progress travels with the repo — the `.db` on its own has to be complete,
+   * or you would commit a file that is missing exactly the work you just did.
+   */
+  checkpoint(): void {
+    try {
+      this.#db.exec('PRAGMA wal_checkpoint(TRUNCATE);');
+    } catch {
+      /* A checkpoint is best-effort: a busy reader must never break a write. */
+    }
+  }
+
   close(): void {
+    this.checkpoint();
     this.#db.close();
   }
 }
