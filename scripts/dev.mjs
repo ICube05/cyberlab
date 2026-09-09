@@ -7,6 +7,7 @@
  * server proxies /api to the backend, so there is a single URL to open.
  */
 import { spawn } from 'node:child_process';
+import { saveProgress } from './progress.mjs';
 
 const procs = [];
 const COLORS = { server: '\x1b[36m', web: '\x1b[35m', reset: '\x1b[0m', dim: '\x1b[2m' };
@@ -40,7 +41,17 @@ function shutdown(code = 0) {
   if (shuttingDown) return;
   shuttingDown = true;
   for (const p of procs) p.kill('SIGTERM');
-  setTimeout(() => process.exit(code), 300);
+  // Give the server a moment to close SQLite (which folds the WAL into the .db)
+  // before saving, so what gets committed is the finished session, not the one
+  // before it. Inert unless the database is tracked — see scripts/progress.mjs.
+  setTimeout(() => {
+    try {
+      saveProgress({ quiet: code !== 0 });
+    } catch {
+      /* Saving progress must never be the reason a shutdown fails. */
+    }
+    process.exit(code);
+  }, 400);
 }
 process.on('SIGINT', () => shutdown(0));
 process.on('SIGTERM', () => shutdown(0));
