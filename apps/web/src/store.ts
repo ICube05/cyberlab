@@ -231,9 +231,25 @@ export const useStore = create<State>((set, get) => ({
     writeStr('cyberlab.lastLesson', id);
     try {
       const lesson = await api.lesson(id);
-      set({ lesson, lessonLoading: false, seenBlocks: new Set(lesson.progress?.blocksSeen ?? []) });
-      // Reset tutor thread when switching lessons.
-      set({ tutorMessages: [] });
+      // A lab belongs to the lesson that opened it. Leaving the previous one
+      // running under a new lesson meant sending XSS payloads at the
+      // access-control target: every path 404s and the file tree shows
+      // profile.php, with nothing saying you are on the wrong machine.
+      const stale = get().labSpecId !== undefined && get().labSpecId !== lesson.lab?.id;
+      const orphaned = stale ? get().attempt : undefined;
+
+      set({
+        lesson,
+        lessonLoading: false,
+        seenBlocks: new Set(lesson.progress?.blocksSeen ?? []),
+        // Reset tutor thread when switching lessons.
+        tutorMessages: [],
+        ...(stale ? { lab: undefined, labSpecId: undefined, lastAction: undefined, attempt: undefined } : {}),
+      });
+
+      // An attempt cannot be graded against a lab that is no longer open, so
+      // close it server-side too. Abandoning never touches mastery.
+      if (orphaned && !orphaned.result) void api.abandonAttempt(orphaned.attemptId).catch(() => {});
     } catch (error) {
       set({ lessonLoading: false });
       get().pushToast({ kind: 'error', title: 'Impossibile aprire la lezione', detail: String(error) });
