@@ -240,7 +240,8 @@ export class ProgressService {
  * none — so without this it would sit at `in-progress` forever and every lesson
  * that lists it as a prerequisite would stay locked. Reading is the work here,
  * so the bar is the honest equivalent: every content block seen, and every
- * inline quiz answered correctly. Lessons with missions are untouched; their
+ * inline quiz answered (right or wrong — a wrong answer reveals the correct one
+ * and still lets you move on). Lessons with missions are untouched; their
  * completion still comes from the graded path.
  */
 function maybeCompleteTheoryLesson(progress: UserProgress, lessonId: string): boolean {
@@ -256,8 +257,12 @@ function maybeCompleteTheoryLesson(progress: UserProgress, lessonId: string): bo
   const seen = new Set(lesson.blocksSeen);
   const allSeen = blocks.every((block) => seen.has(block.id));
   const quizzes = blocks.filter((block) => block.kind === 'quiz');
-  const allQuizzesPassed = quizzes.every((quiz) => lesson.quiz[quiz.id]?.correct);
-  if (!allSeen || !allQuizzesPassed) return false;
+  // Answered, not necessarily correct: a wrong answer still shows the learner
+  // the correct one (in the UI) and must not trap them — the lesson completes
+  // and the next one unlocks. A correct answer still earns the XP and feeds the
+  // recognition dimension in recordQuiz; that is where getting it right pays off.
+  const allQuizzesAnswered = quizzes.every((quiz) => (lesson.quiz[quiz.id]?.attempts ?? 0) > 0);
+  if (!allSeen || !allQuizzesAnswered) return false;
 
   lesson.state = 'completed';
   lesson.completedAt = Date.now();
