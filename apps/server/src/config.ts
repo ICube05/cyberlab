@@ -75,6 +75,17 @@ export function findWorkspaceRoot(start: string = process.cwd()): string {
   return resolve(start);
 }
 
+/**
+ * Like `fromRoot`, but keeps SQLite's `:memory:` sentinel intact.
+ *
+ * Resolving it as a path turned it into `<root>/:memory:`, so the tests and the
+ * e2e run — which set `CYBERLAB_DB=:memory:` precisely to stay ephemeral — were
+ * writing a real database file into the repository root instead.
+ */
+function dbPathFrom(root: string, path: string): string {
+  return path === ':memory:' ? path : fromRoot(root, path);
+}
+
 /** Resolve a possibly-relative path against the workspace root, not cwd. */
 function fromRoot(root: string, path: string): string {
   return isAbsolute(path) ? path : resolve(root, path);
@@ -120,7 +131,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env, root = findWork
   return {
     port: num(env['PORT'], 5174),
     host: str(env['HOST'], '127.0.0.1'),
-    dbPath: fromRoot(root, str(env['CYBERLAB_DB'], './apps/server/data/cyberlab.db')),
+    dbPath: dbPathFrom(root, str(env['CYBERLAB_DB'], './apps/server/data/cyberlab.db')),
     corsOrigins: str(env['CORS_ORIGINS'], 'http://localhost:5173')
       .split(',')
       .map((s) => s.trim())
