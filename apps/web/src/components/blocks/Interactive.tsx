@@ -107,10 +107,25 @@ function HeaderRow({ name, value, clickable, active, onClick }: { name: string; 
 }
 
 /** Inline comprehension check. Reports to the server, which credits recognition. */
-export function Quiz({ block }: { block: QuizBlock; lessonId: string }) {
+export function Quiz({ block, lessonId }: { block: QuizBlock; lessonId: string }) {
   const answerQuiz = useStore((s) => s.answerQuiz);
+  // Whether this quiz was already answered persists on the server; restoring it
+  // means a reload shows the quiz as done (answer revealed) instead of blank.
+  const saved = useStore((s) => s.lesson?.progress?.quiz?.[block.id]);
+  const persistedCorrect = saved && saved.attempts > 0 ? saved.correct : null;
+
   const [selected, setSelected] = useState<string[]>([]);
-  const [result, setResult] = useState<{ correct: boolean } | null>(null);
+  const [submitted, setSubmitted] = useState<boolean | null>(null);
+
+  // Reset the local answer when the lesson (or block) changes, so a quiz that
+  // shares a block id with one in another lesson never inherits its state.
+  useEffect(() => {
+    setSelected([]);
+    setSubmitted(null);
+  }, [block.id, lessonId]);
+
+  const answeredCorrect = submitted ?? persistedCorrect;
+  const result = answeredCorrect === null ? null : { correct: answeredCorrect };
 
   const toggle = (id: string) => {
     if (result) return;
@@ -120,8 +135,12 @@ export function Quiz({ block }: { block: QuizBlock; lessonId: string }) {
   const submit = async () => {
     if (selected.length === 0) return;
     const res = await answerQuiz(block.id, selected);
-    setResult({ correct: res.correct });
+    setSubmitted(res.correct);
   };
+
+  // When restoring a previously-correct answer we no longer know the exact pick,
+  // so show the correct options as the ones chosen; otherwise use the live pick.
+  const shownSelected = submitted === null && persistedCorrect === true ? block.correct : selected;
 
   return (
     <div className="my-4 rounded-xl border border-[var(--color-line)] bg-[var(--color-abyss-800)] p-4">
@@ -131,7 +150,7 @@ export function Quiz({ block }: { block: QuizBlock; lessonId: string }) {
       </div>
       <div className="space-y-1.5">
         {block.options.map((opt) => {
-          const chosen = selected.includes(opt.id);
+          const chosen = shownSelected.includes(opt.id);
           const isCorrect = block.correct.includes(opt.id);
           const showState = result !== null;
           return (
