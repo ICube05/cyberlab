@@ -30,6 +30,7 @@ export const SKILLS: Skill[] = [
   { id: 'ssrf', name: 'SSRF', domain: 'web', summary: 'Making the server make requests for you.', buildsOn: ['http'] },
   { id: 'path-traversal', name: 'Path traversal', domain: 'web', summary: 'Escaping an intended directory.', buildsOn: ['http'] },
   { id: 'cmdi', name: 'Command injection', domain: 'web', summary: 'Breaking out of a shell command.', buildsOn: ['http'] },
+  { id: 'file-upload', name: 'File upload', domain: 'web', summary: 'Validation, storage and execution of user-supplied files.', buildsOn: ['http'] },
   { id: 'jwt', name: 'JWT', domain: 'web', summary: 'Stateless signed tokens and how they fail.', buildsOn: ['crypto-basics', 'encoding'] },
   { id: 'api-security', name: 'API security', domain: 'web', summary: 'Authorization, rate limits and mass assignment on APIs.', buildsOn: ['access-control'] },
   { id: 'business-logic', name: 'Business logic flaws', domain: 'web', summary: 'Abuse that breaks no rule the code checks for.' },

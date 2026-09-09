@@ -106,7 +106,6 @@ export const PLANNED_LESSONS: Lesson[] = [
   // Foundations
 
   // Web
-  planned('mod.web-advanced', { id: 'web.file-upload', title: 'File Upload insicuro', skills: ['business-logic'], difficulty: 'intermediate', outline: ['Validazione di tipo e contenuto', 'Esecuzione remota via upload', 'Storage sicuro'] }),
   planned('mod.web-advanced', { id: 'web.business-logic', title: 'Business Logic Flaws', skills: ['business-logic'], difficulty: 'advanced', outline: ['Abusi che non violano nessuna regola verificata', 'Race condition', 'Manipolazione di flussi multi-step'] }),
 
   // Recon

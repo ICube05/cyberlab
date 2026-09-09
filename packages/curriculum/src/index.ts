@@ -33,6 +33,7 @@ import { csrfLesson } from './lessons/web/csrf.js';
 import { ssrfLesson } from './lessons/web/ssrf.js';
 import { jwtLesson } from './lessons/web/jwt.js';
 import { pathTraversalLesson } from './lessons/web/path-traversal.js';
+import { fileUploadLesson } from './lessons/web/file-upload.js';
 import { brokenAccessControlLesson } from './lessons/broken-access-control.js';
 import { sqlInjectionLesson } from './lessons/sql-injection.js';
 import { linuxPrivescLesson } from './lessons/linux-privesc.js';
@@ -84,6 +85,7 @@ const THEORY_LESSONS: Lesson[] = [
   ssrfLesson,
   jwtLesson,
   pathTraversalLesson,
+  fileUploadLesson,
 ];
 
 export const LESSONS: Lesson[] = [...READY_LESSONS, ...THEORY_LESSONS, ...PLANNED_LESSONS];
