@@ -106,14 +106,6 @@ export const PLANNED_LESSONS: Lesson[] = [
   // Foundations
 
   // Web
-  planned('mod.web-injection', { id: 'web.command-injection', title: 'Command Injection', skills: ['cmdi', 'http'], difficulty: 'intermediate', prerequisites: ['web.sql-injection'], outline: ['Quando l’input finisce in una shell', 'Metacaratteri e concatenatori', 'Blind command injection', 'Mitigazione: niente shell, argomenti separati'] }),
-  planned('mod.web-client', { id: 'web.xss', title: 'Cross-Site Scripting (XSS)', skills: ['xss'], difficulty: 'intermediate', prerequisites: ['web.broken-access-control'], outline: ['Reflected, stored, DOM-based', 'Contesti di output e encoding', 'Impatto: furto di sessione, azioni per conto della vittima', 'CSP e mitigazioni'] }),
-  planned('mod.web-client', { id: 'web.csrf', title: 'CSRF', skills: ['csrf', 'cookies'], difficulty: 'intermediate', outline: ['L’abuso della sessione implicita', 'Token anti-CSRF', 'SameSite come difesa', 'Quando CSRF è irrilevante'] }),
-  planned('mod.web-advanced', { id: 'web.ssrf', title: 'SSRF', skills: ['ssrf'], difficulty: 'advanced', outline: ['Far fare richieste al server', 'Accesso a servizi interni e metadata cloud', 'Filtri e bypass', 'Mitigazione: allow-list'] }),
-  planned('mod.web-advanced', { id: 'web.jwt', title: 'JWT & attacchi', skills: ['jwt'], difficulty: 'advanced', outline: ['Struttura header.payload.signature', 'alg=none e confusione di algoritmo', 'Chiavi deboli', 'Verifica corretta'] }),
-  planned('mod.web-advanced', { id: 'web.path-traversal', title: 'Path Traversal', skills: ['path-traversal'], difficulty: 'intermediate', outline: ['../ e canonicalizzazione', 'Lettura di file arbitrari', 'Mitigazione'] }),
-  planned('mod.web-advanced', { id: 'web.file-upload', title: 'File Upload insicuro', skills: ['business-logic'], difficulty: 'intermediate', outline: ['Validazione di tipo e contenuto', 'Esecuzione remota via upload', 'Storage sicuro'] }),
-  planned('mod.web-advanced', { id: 'web.business-logic', title: 'Business Logic Flaws', skills: ['business-logic'], difficulty: 'advanced', outline: ['Abusi che non violano nessuna regola verificata', 'Race condition', 'Manipolazione di flussi multi-step'] }),
 
   // Recon
   planned('mod.recon-passive', { id: 'recon.passive', title: 'Ricognizione passiva', skills: ['passive-recon'], outline: ['OSINT e footprinting', 'Certificati, DNS storici', 'Fonti pubbliche'] }),

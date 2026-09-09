@@ -127,28 +127,45 @@ export function RoadmapTree() {
               </button>
               {!levelCollapsed && (
                 <div className="ml-3.5 border-l border-[var(--color-line)] pl-1.5">
-                  {modules.map((module) => (
-                    <div key={module.id} className="mt-0.5">
-                      <div className="px-2 py-1 text-[10.5px] font-semibold uppercase tracking-wider text-[var(--color-ink-500)]">
-                        {module.title}
+                  {modules.map((module) => {
+                    const moduleCollapsed = collapsed.has(module.id);
+                    return (
+                      <div key={module.id} className="mt-0.5">
+                        {/* Modules are folders too, so the whole tree collapses
+                            level → module → lesson, like an IDE file tree. */}
+                        <button
+                          onClick={() => toggle(module.id)}
+                          className="group flex w-full items-center gap-1 rounded-md px-1.5 py-1 text-left hover:bg-[var(--color-abyss-700)] focus-ring"
+                        >
+                          <span
+                            className="text-[var(--color-ink-500)] transition-transform"
+                            style={{ transform: moduleCollapsed ? 'none' : 'rotate(90deg)' }}
+                          >
+                            <Icon.chevronRight size={11} />
+                          </span>
+                          <span className="flex-1 truncate text-[10.5px] font-semibold uppercase tracking-wider text-[var(--color-ink-500)]">
+                            {module.title}
+                          </span>
+                        </button>
+                        {!moduleCollapsed &&
+                          module.lessons
+                            .map((lid) => curriculum.lessons.find((l) => l.id === lid))
+                            .filter(Boolean)
+                            .map((lesson) => (
+                              <LessonRow
+                                key={lesson!.id}
+                                id={lesson!.id}
+                                title={lesson!.title}
+                                status={lesson!.status}
+                                state={lessonStates[lesson!.id] ?? 'locked'}
+                                active={activeLessonId === lesson!.id}
+                                hasLab={lesson!.hasLab}
+                                onClick={() => openLesson(lesson!.id)}
+                              />
+                            ))}
                       </div>
-                      {module.lessons
-                        .map((lid) => curriculum.lessons.find((l) => l.id === lid))
-                        .filter(Boolean)
-                        .map((lesson) => (
-                          <LessonRow
-                            key={lesson!.id}
-                            id={lesson!.id}
-                            title={lesson!.title}
-                            status={lesson!.status}
-                            state={lessonStates[lesson!.id] ?? 'locked'}
-                            active={activeLessonId === lesson!.id}
-                            hasLab={lesson!.hasLab}
-                            onClick={() => openLesson(lesson!.id)}
-                          />
-                        ))}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>

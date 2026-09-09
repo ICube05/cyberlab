@@ -27,12 +27,22 @@ import { cryptoLesson } from './lessons/foundations/crypto.js';
 import { linuxShellLesson } from './lessons/foundations/linux-shell.js';
 import { linuxPermissionsLesson } from './lessons/foundations/linux-permissions.js';
 import { httpCookiesLesson } from './lessons/web/http-cookies.js';
+import { commandInjectionLesson } from './lessons/web/command-injection.js';
+import { xssLesson } from './lessons/web/xss.js';
+import { csrfLesson } from './lessons/web/csrf.js';
+import { ssrfLesson } from './lessons/web/ssrf.js';
+import { jwtLesson } from './lessons/web/jwt.js';
+import { pathTraversalLesson } from './lessons/web/path-traversal.js';
+import { fileUploadLesson } from './lessons/web/file-upload.js';
+import { businessLogicLesson } from './lessons/web/business-logic.js';
 import { brokenAccessControlLesson } from './lessons/broken-access-control.js';
 import { sqlInjectionLesson } from './lessons/sql-injection.js';
 import { linuxPrivescLesson } from './lessons/linux-privesc.js';
 import { brokenAccessControlExercises } from './exercises/broken-access-control.js';
 import { sqlInjectionExercises } from './exercises/sql-injection.js';
 import { linuxPrivescExercises } from './exercises/linux-privesc.js';
+import { xssExercises } from './exercises/xss.js';
+import { pathTraversalExercises } from './exercises/path-traversal.js';
 
 export { generateExercise, type GenerateInput, type GeneratedExercise } from './generator.js';
 export { SKILLS, SKILL_BY_ID } from './skills.js';
@@ -51,7 +61,7 @@ export { LEVELS, MODULES, PLANNED_LESSONS } from './roadmap.js';
  */
 
 /** Lessons with a live lab and graded missions. */
-const READY_LESSONS: Lesson[] = [brokenAccessControlLesson, sqlInjectionLesson, linuxPrivescLesson];
+const READY_LESSONS: Lesson[] = [brokenAccessControlLesson, sqlInjectionLesson, linuxPrivescLesson, xssLesson, pathTraversalLesson];
 
 /**
  * Lessons with full authored theory and interactive blocks, but no lab yet.
@@ -72,6 +82,12 @@ const THEORY_LESSONS: Lesson[] = [
   linuxShellLesson,
   linuxPermissionsLesson,
   httpCookiesLesson,
+  commandInjectionLesson,
+  csrfLesson,
+  ssrfLesson,
+  jwtLesson,
+  fileUploadLesson,
+  businessLogicLesson,
 ];
 
 export const LESSONS: Lesson[] = [...READY_LESSONS, ...THEORY_LESSONS, ...PLANNED_LESSONS];
@@ -80,6 +96,8 @@ export const EXERCISES: Exercise[] = [
   ...brokenAccessControlExercises,
   ...sqlInjectionExercises,
   ...linuxPrivescExercises,
+  ...xssExercises,
+  ...pathTraversalExercises,
 ];
 
 export const COURSE: Course = {

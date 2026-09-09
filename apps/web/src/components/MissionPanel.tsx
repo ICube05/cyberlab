@@ -242,7 +242,6 @@ function ActiveMission() {
 function MissionResult() {
   const attempt = useStore((s) => s.attempt)!;
   const clear = useStore((s) => s.clearAttemptResult);
-  const abandon = useStore((s) => s.abandonAttempt);
   const startAttempt = useStore((s) => s.startAttempt);
   const askTutor = useStore((s) => s.askTutor);
   const [explaining, setExplaining] = useState(false);
@@ -314,7 +313,7 @@ function MissionResult() {
           <Icon.lightbulb size={14} /> {ev.passed ? 'Perché ha funzionato?' : 'Aiutami a capire'}
         </button>
         {ev.passed ? (
-          <button className="btn btn-ghost !px-3" onClick={clear} title="Chiudi">
+          <button className="btn btn-ghost !px-3" onClick={clear} title="Chiudi e torna alle missioni">
             <Icon.check size={14} />
           </button>
         ) : (
@@ -324,9 +323,11 @@ function MissionResult() {
         )}
       </div>
 
+      {/* The attempt is already graded, so this is a plain close, not an
+          abandon: nothing is lost and the list shows the mission ticked. */}
       <button
         className="btn btn-ghost mt-2 w-full justify-center !py-1.5 text-[11.5px] text-[var(--color-ink-400)]"
-        onClick={() => void abandon()}
+        onClick={clear}
       >
         <Icon.arrowLeft size={13} /> Torna alle missioni
       </button>

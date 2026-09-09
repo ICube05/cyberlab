@@ -325,8 +325,17 @@ export const useStore = create<State>((set, get) => ({
     }
   },
 
+  /**
+   * Close a graded mission and go back to the mission list.
+   *
+   * Dropping only `result` used to leave the finished attempt in place, so the
+   * panel fell back to the live-mission view of a mission that was already
+   * evaluated: the objectives were done and the only way out was abandoning.
+   * The attempt is closed on the server by the submit itself, so there is
+   * nothing to release here — just stop showing it.
+   */
   clearAttemptResult() {
-    set((s) => (s.attempt ? { attempt: { ...s.attempt, result: undefined } } : {}));
+    set({ attempt: undefined });
   },
 
   setTutorMode(mode) {

@@ -134,6 +134,11 @@ export function registerAttemptRoutes(app: FastifyInstance, services: Services):
     attempt.evaluation = evaluation;
     store.saveAttempt(attempt);
 
+    // A graded attempt is no longer live on its lab. Without this the lab kept
+    // computing the objective preview of a finished mission after every action,
+    // which pushed the learner back into a mission they had already completed.
+    if (attempt.labInstanceId) activeAttempts.delete(`${userId}:${attempt.labInstanceId}`);
+
     const applied = progress.applyEvaluation(userId, exercise, evaluation, attempt);
     const response: SubmitAttemptResponse = {
       evaluation,

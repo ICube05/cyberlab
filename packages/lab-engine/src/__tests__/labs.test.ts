@@ -15,7 +15,12 @@ const spec = (id: string, builderId: string): LabSpec => ({
   seedable: true,
 });
 
-const SPECS = [spec('lab.vault', 'web.vault'), spec('lab.catalog', 'web.injection'), spec('lab.foothold', 'linux.foothold')];
+const SPECS = [
+  spec('lab.vault', 'web.vault'),
+  spec('lab.catalog', 'web.injection'),
+  spec('lab.foothold', 'linux.foothold'),
+  spec('lab.helpdesk', 'web.helpdesk'),
+];
 
 describe('lab engine — real execution', () => {
   let mgr: LabManager;
@@ -96,6 +101,165 @@ describe('lab engine — real execution', () => {
   it('isolates one user from another user’s lab', async () => {
     const { instanceId } = await mgr.create('alice', 'lab.vault');
     expect(() => mgr.getState('bob', instanceId)).toThrow();
+  });
+
+  // ── Helpdesk: XSS + path traversal, the multi-vuln web target ──────────────
+
+  it('reflected XSS: a script in the search box lands in executable position', async () => {
+    const { instanceId } = await mgr.create('u', 'lab.helpdesk', 'seed1');
+    await mgr.dispatch('u', instanceId, {
+      type: 'http.request',
+      method: 'GET',
+      path: '/cerca?q=' + encodeURIComponent('<script>alert(1)</script>'),
+      headers: {},
+    });
+    const state = mgr.getState('u', instanceId);
+    expect(state.signals.some((s) => s.name === 'xss.reflected.executed')).toBe(true);
+  });
+
+  it('stored XSS: a comment steals the agent session, which then opens /staff', async () => {
+    const { instanceId } = await mgr.create('u', 'lab.helpdesk', 'seed1');
+    // Plant the payload as a ticket comment.
+    const posted = (
+      await mgr.dispatch('u', instanceId, {
+        type: 'browser.submit',
+        path: '/commento',
+        method: 'POST',
+        fields: { id: '4101', autore: 'x', testo: '<script>steal()</script>' },
+      })
+    ).result;
+    const afterPost = mgr.getState('u', instanceId);
+    expect(afterPost.signals.some((s) => s.name === 'xss.stored.persisted')).toBe(true);
+    expect(afterPost.signals.some((s) => s.name === 'xss.agent.session.exposed')).toBe(true);
+
+    // The exposed session is handed over in the server notes.
+    if (posted.type !== 'http.response') throw new Error('expected response');
+    const noted = (posted.response.serverNotes ?? []).join('\n');
+    const session = /session=(\S+)/.exec(noted)?.[1];
+    expect(session).toBeTruthy();
+
+    // Using it as a cookie reaches the staff area and captures the flag.
+    const staff = (
+      await mgr.dispatch('u', instanceId, {
+        type: 'http.request',
+        method: 'GET',
+        path: '/staff',
+        headers: { Cookie: `session=${session}` },
+      })
+    ).result;
+    expect(staff.type === 'http.response' && staff.response.status).toBe(200);
+    const state = mgr.getState('u', instanceId);
+    expect(state.signals.some((s) => s.name === 'staff.area.reached')).toBe(true);
+    expect(state.flags.some((f) => f.startsWith('CL{xss_'))).toBe(true);
+  });
+
+  it('/staff refuses a request without the agent session', async () => {
+    const { instanceId } = await mgr.create('u', 'lab.helpdesk', 'seed1');
+    const res = (await mgr.dispatch('u', instanceId, { type: 'http.request', method: 'GET', path: '/staff', headers: {} }))
+      .result;
+    expect(res.type === 'http.response' && res.response.status).toBe(403);
+  });
+
+  it('fixing escapeOutput neutralises the same payload', async () => {
+    const { instanceId } = await mgr.create('u', 'lab.helpdesk', 'seed1');
+    const read = (await mgr.dispatch('u', instanceId, { type: 'fs.read', path: '/srv/helpdesk/config.json' })).result;
+    if (read.type !== 'fs.content') throw new Error('expected config');
+    const patched = read.content.replace('"escapeOutput": false', '"escapeOutput": true');
+    const write = await mgr.dispatch('u', instanceId, {
+      type: 'editor.write',
+      path: '/srv/helpdesk/config.json',
+      content: patched,
+    });
+    expect(write.result.ok).toBe(true);
+    await mgr.dispatch('u', instanceId, {
+      type: 'http.request',
+      method: 'GET',
+      path: '/cerca?q=' + encodeURIComponent('<script>alert(1)</script>'),
+      headers: {},
+    });
+    const state = mgr.getState('u', instanceId);
+    expect(state.signals.some((s) => s.name === 'config.updated')).toBe(true);
+    expect(state.signals.some((s) => s.name === 'xss.payload.neutralised')).toBe(true);
+    expect(state.signals.some((s) => s.name === 'xss.reflected.executed')).toBe(false);
+  });
+
+  it('path traversal: escapes the attachment dir and reads /etc/passwd, then the .env flag', async () => {
+    const { instanceId } = await mgr.create('u', 'lab.helpdesk', 'seed1');
+    const passwd = (
+      await mgr.dispatch('u', instanceId, {
+        type: 'http.request',
+        method: 'GET',
+        path: '/allegato?file=' + encodeURIComponent('../../../etc/passwd'),
+        headers: {},
+      })
+    ).result;
+    expect(passwd.type === 'http.response' && passwd.response.body).toMatch(/root:x:0:0/);
+    await mgr.dispatch('u', instanceId, {
+      type: 'http.request',
+      method: 'GET',
+      path: '/allegato?file=' + encodeURIComponent('../.env'),
+      headers: {},
+    });
+    const state = mgr.getState('u', instanceId);
+    expect(state.signals.some((s) => s.name === 'traversal.escaped' && /\/etc\/passwd$/.test(String(s.data?.['resolved'])))).toBe(true);
+    expect(state.signals.some((s) => s.name === 'traversal.sensitive.read')).toBe(true);
+    expect(state.flags.some((f) => f.startsWith('CL{traversal_'))).toBe(true);
+  });
+
+  it('path traversal hits the permission wall on /etc/shadow, not a filter', async () => {
+    const { instanceId } = await mgr.create('u', 'lab.helpdesk', 'seed1');
+    const res = (
+      await mgr.dispatch('u', instanceId, {
+        type: 'http.request',
+        method: 'GET',
+        path: '/allegato?file=' + encodeURIComponent('../../../etc/shadow'),
+        headers: {},
+      })
+    ).result;
+    expect(res.type === 'http.response' && res.response.status).toBe(500);
+    const state = mgr.getState('u', instanceId);
+    expect(state.signals.some((s) => s.name === 'traversal.permission.denied')).toBe(true);
+    // passwd works, shadow does not: the boundary is permissions, not a blocklist.
+    expect(state.flags.some((f) => f.startsWith('CL{'))).toBe(false);
+  });
+
+  it('confining attachments blocks the traversal but still serves a legit file', async () => {
+    const { instanceId } = await mgr.create('u', 'lab.helpdesk', 'seed1');
+    const read = (await mgr.dispatch('u', instanceId, { type: 'fs.read', path: '/srv/helpdesk/config.json' })).result;
+    if (read.type !== 'fs.content') throw new Error('expected config');
+    const patched = read.content.replace('"confineAttachments": false', '"confineAttachments": true');
+    await mgr.dispatch('u', instanceId, { type: 'editor.write', path: '/srv/helpdesk/config.json', content: patched });
+
+    const blocked = (
+      await mgr.dispatch('u', instanceId, {
+        type: 'http.request',
+        method: 'GET',
+        path: '/allegato?file=' + encodeURIComponent('../../../etc/passwd'),
+        headers: {},
+      })
+    ).result;
+    expect(blocked.type === 'http.response' && blocked.response.status).toBe(403);
+
+    const ok = (
+      await mgr.dispatch('u', instanceId, {
+        type: 'http.request',
+        method: 'GET',
+        path: '/allegato?file=nota-cliente.txt',
+        headers: {},
+      })
+    ).result;
+    expect(ok.type === 'http.response' && ok.response.status).toBe(200);
+    const state = mgr.getState('u', instanceId);
+    expect(state.signals.some((s) => s.name === 'traversal.blocked')).toBe(true);
+  });
+
+  it('helpdesk file panel does not hand over .env for free', async () => {
+    const { instanceId } = await mgr.create('u', 'lab.helpdesk', 'seed1');
+    const listing = (await mgr.dispatch('u', instanceId, { type: 'lab.inspect', what: 'files' })).result;
+    if (listing.type !== 'inspect' || listing.view.kind !== 'files') throw new Error('expected files view');
+    expect(listing.view.root.some((e) => e.path.endsWith('.env'))).toBe(false);
+    const refused = (await mgr.dispatch('u', instanceId, { type: 'fs.read', path: '/srv/helpdesk/.env' })).result;
+    expect(refused.type === 'error' && refused.message).toMatch(/non è esposto|allegato/i);
   });
 });
 
