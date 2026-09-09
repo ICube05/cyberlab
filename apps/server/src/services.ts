@@ -37,7 +37,9 @@ export async function buildServices(config: Config): Promise<Services> {
   const integrity = assertValidCurriculum();
   // eslint-disable-next-line no-console
   console.log(
-    `[curriculum] ${integrity.stats.lessons} lessons (${integrity.stats.readyLessons} ready), ` +
+    `[curriculum] ${integrity.stats.lessons} lessons ` +
+      `(${integrity.stats.readyLessons} with labs, ${integrity.stats.theoryLessons} theory, ` +
+      `${integrity.stats.lessons - integrity.stats.readyLessons - integrity.stats.theoryLessons} planned), ` +
       `${integrity.stats.exercises} exercises, ${integrity.stats.labs} labs, ${integrity.stats.skills} skills` +
       (integrity.warnings.length ? ` — ${integrity.warnings.length} warning(s)` : ''),
   );

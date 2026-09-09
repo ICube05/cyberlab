@@ -77,7 +77,12 @@ export function RoadmapTree() {
         <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--color-ink-500)]">
           Roadmap
         </span>
-        <span className="chip">{curriculum.lessons.filter((l) => l.status === 'ready').length} live</span>
+        <span className="chip" title="Lezioni con laboratorio interattivo">
+          {curriculum.lessons.filter((l) => l.status === 'ready').length} lab
+        </span>
+        <span className="chip" title="Lezioni con teoria e blocchi interattivi, senza laboratorio">
+          {curriculum.lessons.filter((l) => l.status === 'theory-only').length} teoria
+        </span>
         <div className="ml-auto flex items-center gap-0.5">
           {/* Fold the whole outline in one click — the tree is 58 lessons deep. */}
           <button
@@ -192,6 +197,11 @@ function LessonRow({
         </span>
       )}
       {status === 'planned' && <span className="chip !border-[var(--color-line)] !px-1.5 !py-0 !text-[9.5px]">soon</span>}
+      {status === 'theory-only' && (
+        <span className="text-[var(--color-ink-500)]" title="Teoria e blocchi interattivi, nessun laboratorio">
+          <Icon.book size={11} />
+        </span>
+      )}
       {state === 'mastered' && (
         <span className="text-[var(--color-amber)]" title="Padroneggiata">
           <Icon.star size={12} />

@@ -33,6 +33,8 @@ export interface IntegrityReport {
     modules: number;
     lessons: number;
     readyLessons: number;
+    /** Authored theory with interactive blocks, but no lab yet. */
+    theoryLessons: number;
     exercises: number;
     labs: number;
     skills: number;
@@ -198,6 +200,7 @@ export function validateCurriculum(graph: ContentGraph): IntegrityReport {
       modules: graph.modules.length,
       lessons: graph.lessons.length,
       readyLessons: graph.lessons.filter((l) => l.status === 'ready').length,
+      theoryLessons: graph.lessons.filter((l) => l.status === 'theory-only').length,
       exercises: graph.exercises.length,
       labs: graph.labs.length,
       skills: graph.skills.length,

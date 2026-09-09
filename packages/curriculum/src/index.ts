@@ -17,6 +17,16 @@ import {
 import { SKILLS } from './skills.js';
 import { LABS } from './labs.js';
 import { LEVELS, MODULES, PLANNED_LESSONS } from './roadmap.js';
+import { howInternetWorksLesson } from './lessons/foundations/how-internet-works.js';
+import { tcpIpLesson } from './lessons/foundations/tcp-ip.js';
+import { dnsLesson } from './lessons/foundations/dns.js';
+import { portsSocketsLesson } from './lessons/foundations/ports-sockets.js';
+import { natFirewallLesson } from './lessons/foundations/nat-firewall.js';
+import { httpLesson } from './lessons/foundations/http.js';
+import { cryptoLesson } from './lessons/foundations/crypto.js';
+import { linuxShellLesson } from './lessons/foundations/linux-shell.js';
+import { linuxPermissionsLesson } from './lessons/foundations/linux-permissions.js';
+import { httpCookiesLesson } from './lessons/web/http-cookies.js';
 import { brokenAccessControlLesson } from './lessons/broken-access-control.js';
 import { sqlInjectionLesson } from './lessons/sql-injection.js';
 import { linuxPrivescLesson } from './lessons/linux-privesc.js';
@@ -32,15 +42,39 @@ export { LEVELS, MODULES, PLANNED_LESSONS } from './roadmap.js';
 /**
  * The assembled content graph.
  *
- * Three lessons are fully interactive (`ready`); the rest of the eleven-level
- * roadmap is `planned` with real outlines. `validateCurriculum` runs over this
- * whole graph at load time, so a broken reference fails fast rather than
- * surfacing as a confusing runtime error later.
+ * Lessons come in three honest states. `ready` means authored theory, a live
+ * lab and graded missions. `theory-only` means authored theory and interactive
+ * blocks, with no lab yet — real teaching material, and the roadmap says so.
+ * `planned` means an outline and nothing more, and cannot be entered.
+ * `validateCurriculum` runs over the whole graph at load time, so a broken
+ * reference fails fast rather than surfacing as a confusing runtime error.
  */
 
+/** Lessons with a live lab and graded missions. */
 const READY_LESSONS: Lesson[] = [brokenAccessControlLesson, sqlInjectionLesson, linuxPrivescLesson];
 
-export const LESSONS: Lesson[] = [...READY_LESSONS, ...PLANNED_LESSONS];
+/**
+ * Lessons with full authored theory and interactive blocks, but no lab yet.
+ *
+ * They are complete teaching material — diagrams, playgrounds, quizzes — and
+ * they complete by being read and answered, not by a graded mission. Keeping
+ * them in their own list is what lets the roadmap tell the truth about which
+ * kind of lesson you are about to open.
+ */
+const THEORY_LESSONS: Lesson[] = [
+  howInternetWorksLesson,
+  tcpIpLesson,
+  dnsLesson,
+  portsSocketsLesson,
+  natFirewallLesson,
+  httpLesson,
+  cryptoLesson,
+  linuxShellLesson,
+  linuxPermissionsLesson,
+  httpCookiesLesson,
+];
+
+export const LESSONS: Lesson[] = [...READY_LESSONS, ...THEORY_LESSONS, ...PLANNED_LESSONS];
 
 export const EXERCISES: Exercise[] = [
   ...brokenAccessControlExercises,

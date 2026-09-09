@@ -91,7 +91,13 @@ export function StatusBar() {
           <span title={`model: ${health.aiModel}`}>
             ai: <span className={health.aiReachable && health.aiProvider !== 'offline' ? 'text-[var(--color-flux)]' : 'text-[var(--color-ink-400)]'}>{health.aiProvider}</span>
           </span>
-          <span>{health.curriculum.ready}/{health.curriculum.lessons} lezioni live</span>
+          <span title={`${health.curriculum.ready} con laboratorio, ${health.curriculum.theory} di sola teoria, su ${health.curriculum.lessons} totali`}>
+            lezioni: <span className="text-[var(--color-flux)]">{health.curriculum.ready}</span> lab
+            {' + '}
+            <span className="text-[var(--color-ink-300)]">{health.curriculum.theory}</span> teoria
+            {' / '}
+            {health.curriculum.lessons}
+          </span>
         </>
       )}
       {lab && <span className="mono">lab {lab.instanceId.slice(-6)} · {lab.eventCount} azioni</span>}

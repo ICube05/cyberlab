@@ -104,18 +104,8 @@ export const MODULES: Module[] = [
 
 export const PLANNED_LESSONS: Lesson[] = [
   // Foundations
-  planned('mod.net-foundations', { id: 'found.how-internet-works', title: 'Come funziona Internet', skills: ['tcpip'], outline: ['Il modello a strati e il viaggio di un pacchetto', 'Client, server e il ruolo degli intermediari', 'Indirizzi IP e instradamento di base'] }),
-  planned('mod.net-foundations', { id: 'found.tcp-ip', title: 'TCP/IP', skills: ['tcpip'], outline: ['Handshake a tre vie', 'Porte e multiplexing', 'TCP vs UDP', 'Cosa vede un firewall'] }),
-  planned('mod.net-foundations', { id: 'found.dns', title: 'DNS', skills: ['dns'], outline: ['Risoluzione ricorsiva e iterativa', 'Tipi di record (A, AAAA, CNAME, MX, TXT)', 'DNS come superficie di ricognizione'] }),
-  planned('mod.net-foundations', { id: 'found.ports-sockets', title: 'Porte e socket', skills: ['tcpip'], outline: ['Cos’è un socket', 'Porte note e effimere', 'Stato di una connessione'] }),
-  planned('mod.net-foundations', { id: 'found.nat-firewall', title: 'NAT e firewall', skills: ['tcpip'], outline: ['Come NAT riscrive gli indirizzi', 'Regole di firewall stateful', 'Implicazioni per l’attaccante'] }),
-  planned('mod.web-foundations', { id: 'found.http', title: 'HTTP & HTTPS', subtitle: 'Metodi, status, header', skills: ['http'], difficulty: 'beginner', outline: ['Anatomia di richiesta e risposta', 'Metodi e semantica', 'Status code', 'Header che contano per la sicurezza', 'Cosa aggiunge TLS'] }),
-  planned('mod.web-foundations', { id: 'found.crypto', title: 'Crittografia fondamentale', skills: ['crypto-basics', 'encoding'], difficulty: 'intermediate', outline: ['Hashing vs cifratura vs encoding', 'Simmetrico e asimmetrico', 'Firme digitali', 'Perché encoding non è sicurezza'] }),
-  planned('mod.linux-foundations', { id: 'found.linux-shell', title: 'La shell Linux', skills: ['linux-fundamentals'], outline: ['Navigazione e filesystem', 'Pipe e redirezione', 'Processi in primo piano/background'] }),
-  planned('mod.linux-foundations', { id: 'found.linux-permissions', title: 'Permessi Linux', skills: ['permissions'], outline: ['rwx per owner/group/other', 'Notazione ottale', 'SUID/SGID/sticky bit'] }),
 
   // Web
-  planned('mod.web-access-control', { id: 'found.http-cookies', title: 'HTTP Cookies & Sessions', subtitle: 'Come HTTP ricorda chi sei', skills: ['cookies', 'http', 'authn'], difficulty: 'beginner', minutes: 25, outline: ['Perché HTTP è stateless', 'Set-Cookie e il ciclo di vita', 'Attributi: HttpOnly, Secure, SameSite', 'Sessioni server-side vs token', 'Cosa succede se rubi un cookie'] }),
   planned('mod.web-injection', { id: 'web.command-injection', title: 'Command Injection', skills: ['cmdi', 'http'], difficulty: 'intermediate', prerequisites: ['web.sql-injection'], outline: ['Quando l’input finisce in una shell', 'Metacaratteri e concatenatori', 'Blind command injection', 'Mitigazione: niente shell, argomenti separati'] }),
   planned('mod.web-client', { id: 'web.xss', title: 'Cross-Site Scripting (XSS)', skills: ['xss'], difficulty: 'intermediate', prerequisites: ['web.broken-access-control'], outline: ['Reflected, stored, DOM-based', 'Contesti di output e encoding', 'Impatto: furto di sessione, azioni per conto della vittima', 'CSP e mitigazioni'] }),
   planned('mod.web-client', { id: 'web.csrf', title: 'CSRF', skills: ['csrf', 'cookies'], difficulty: 'intermediate', outline: ['L’abuso della sessione implicita', 'Token anti-CSRF', 'SameSite come difesa', 'Quando CSRF è irrilevante'] }),

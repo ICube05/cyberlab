@@ -36,6 +36,11 @@ export function LessonView() {
             <DifficultyChip difficulty={l.difficulty} />
             <span className="chip"><Icon.clock size={12} /> {l.estimatedMinutes} min</span>
             {l.status === 'ready' && <span className="chip !border-[var(--color-flux-dim)] !text-[var(--color-flux)]"><Icon.flask size={12} /> Lab interattivo</span>}
+            {l.status === 'theory-only' && (
+              <span className="chip" title="Teoria completa e blocchi interattivi; il laboratorio per questo argomento non c’è ancora">
+                <Icon.book size={12} /> Teoria + interattivi
+              </span>
+            )}
             {l.skills.map((s) => (
               <span key={s} className="chip !text-[10.5px]">{s}</span>
             ))}

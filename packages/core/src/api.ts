@@ -129,7 +129,7 @@ export interface HealthResponse {
   /** Boot-time misconfigurations, surfaced in the UI instead of only the console. */
   diagnostics: string[];
   contentLocale: 'it' | 'en';
-  curriculum: { lessons: number; ready: number; labs: number; exercises: number };
+  curriculum: { lessons: number; ready: number; theory: number; labs: number; exercises: number };
 }
 
 export interface CurriculumResponse extends CurriculumIndex {

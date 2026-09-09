@@ -68,6 +68,7 @@ export async function buildApp(services: Services): Promise<FastifyInstance> {
       curriculum: {
         lessons: report.stats.lessons,
         ready: report.stats.readyLessons,
+        theory: report.stats.theoryLessons,
         labs: report.stats.labs,
         exercises: report.stats.exercises,
       },
