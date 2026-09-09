@@ -14,6 +14,7 @@ import { generateExercise, getExercise, getExercisesForLesson, getLesson } from 
 import type { Services } from '../services.js';
 import { userIdFrom } from './util.js';
 import { activeAttempts } from './labs.js';
+import { rememberChallenge, resolveExercise, writeScenario } from '../challenges.js';
 
 /**
  * Attempts — the graded path.
@@ -29,7 +30,7 @@ export function registerAttemptRoutes(app: FastifyInstance, services: Services):
   app.post('/api/attempts', async (request, reply) => {
     const userId = userIdFrom(request);
     const body = startAttemptSchema.parse(request.body);
-    const exercise = getExercise(body.exerciseId);
+    const exercise = resolveExercise(body.exerciseId);
     if (!exercise) return reply.code(404).send({ error: 'not_found', message: 'Unknown exercise' });
 
     const attempt: Attempt = {
@@ -60,7 +61,7 @@ export function registerAttemptRoutes(app: FastifyInstance, services: Services):
     if (!attempt || attempt.userId !== userId) {
       return reply.code(404).send({ error: 'not_found', message: 'Attempt not found' });
     }
-    const exercise = getExercise(attempt.exerciseId);
+    const exercise = resolveExercise(attempt.exerciseId);
     const hint = exercise?.hints.find((h) => h.id === body.hintId);
     if (!hint) return reply.code(404).send({ error: 'not_found', message: 'Unknown hint' });
 
@@ -108,7 +109,7 @@ export function registerAttemptRoutes(app: FastifyInstance, services: Services):
     if (!attempt || attempt.userId !== userId) {
       return reply.code(404).send({ error: 'not_found', message: 'Attempt not found' });
     }
-    const exercise = getExercise(attempt.exerciseId);
+    const exercise = resolveExercise(attempt.exerciseId);
     if (!exercise) return reply.code(404).send({ error: 'not_found', message: 'Exercise gone' });
 
     // Gather the authoritative lab evidence.
@@ -166,7 +167,23 @@ export function registerAttemptRoutes(app: FastifyInstance, services: Services):
       difficultyShift: body.difficultyShift,
       seed,
     });
-    return reply.send({ exercise, derivedFrom } satisfies GenerateExerciseResponse);
+
+    // The model dresses the mission as an incident; it never touches the
+    // objectives, criteria or scoring, so a challenge stays exactly as gradable
+    // as an authored one. No provider (or a bad answer) keeps the authored text.
+    const scenario = await writeScenario(services.provider, lesson, exercise);
+    const framed = scenario
+      ? { ...exercise, mission: { ...exercise.mission, context: scenario } }
+      : exercise;
+
+    // Without this the id resolves nowhere and the challenge cannot be started.
+    rememberChallenge(framed);
+
+    return reply.send({
+      exercise: framed,
+      derivedFrom,
+      scenarioBy: scenario ? services.provider.name : 'authored',
+    } satisfies GenerateExerciseResponse);
   });
 }
 

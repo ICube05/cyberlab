@@ -4,6 +4,7 @@ import { Icon } from './icons.js';
 import { Split } from './components/Split.js';
 import { RoadmapTree } from './components/RoadmapTree.js';
 import { MasteryDashboard } from './components/MasteryDashboard.js';
+import { ChallengePanel } from './components/ChallengePanel.js';
 import { LessonView } from './components/LessonView.js';
 import { LabPanel } from './components/LabPanel.js';
 import { MissionPanel } from './components/MissionPanel.js';
@@ -26,7 +27,7 @@ export function App() {
   const sidebarOpen = useStore((s) => s.sidebarOpen);
   const tutorOpen = useStore((s) => s.tutorPanelOpen);
   const lesson = useStore((s) => s.lesson);
-  const [sidebarTab, setSidebarTab] = useState<'roadmap' | 'mastery'>('roadmap');
+  const [sidebarTab, setSidebarTab] = useState<'roadmap' | 'mastery' | 'challenge'>('roadmap');
 
   useKeyboardShortcuts();
   useEffect(() => {
@@ -40,7 +41,7 @@ export function App() {
   const toggleSidebar = useStore.getState().toggleSidebar;
   const toggleTutor = useStore.getState().toggleTutor;
 
-  const selectSidebar = (tab: 'roadmap' | 'mastery') => {
+  const selectSidebar = (tab: 'roadmap' | 'mastery' | 'challenge') => {
     if (sidebarOpen && sidebarTab === tab) {
       toggleSidebar(false);
       return;
@@ -72,12 +73,18 @@ export function App() {
             label="Competenze"
             onClick={() => selectSidebar('mastery')}
           />
+          <RailButton
+            active={sidebarOpen && sidebarTab === 'challenge'}
+            icon="flame"
+            label="Sfide"
+            onClick={() => selectSidebar('challenge')}
+          />
         </nav>
 
         {/* sidebar */}
         {sidebarOpen && (
           <aside className="w-64 shrink-0 border-r border-[var(--color-line)] bg-[var(--color-abyss-900)]">
-            {sidebarTab === 'roadmap' ? <RoadmapTree /> : <MasteryDashboard />}
+            {sidebarTab === 'roadmap' ? <RoadmapTree /> : sidebarTab === 'mastery' ? <MasteryDashboard /> : <ChallengePanel />}
           </aside>
         )}
 

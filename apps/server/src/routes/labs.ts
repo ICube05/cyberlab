@@ -6,7 +6,7 @@ import {
   type LabResponse,
   type LabAction,
 } from '@cyberlab/core';
-import { getExercise } from '@cyberlab/curriculum';
+import { resolveExercise } from '../challenges.js';
 import type { Services } from '../services.js';
 import { userIdFrom } from './util.js';
 
@@ -55,7 +55,7 @@ export function registerLabRoutes(app: FastifyInstance, services: Services): voi
       const activeAttemptId = activeAttempts.get(`${userId}:${id}`);
       if (activeAttemptId) {
         const attempt = store.getAttempt(activeAttemptId);
-        const exercise = attempt ? getExercise(attempt.exerciseId) : undefined;
+        const exercise = attempt ? resolveExercise(attempt.exerciseId) : undefined;
         if (attempt && exercise) {
           const { evaluate } = await import('@cyberlab/core');
           const evaluation = evaluate({
