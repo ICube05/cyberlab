@@ -1,6 +1,33 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { FlowDiagramBlock, SequenceBlock } from '@cyberlab/core';
 import { Icon } from '../../icons.js';
+
+/**
+ * The width the diagram actually has to draw in.
+ *
+ * Both diagrams used fixed spacing, so a two-actor sequence drew ~300px wide
+ * and sat marooned in the middle of a much wider panel: cramped lanes, labels
+ * spilling past their arrows, detail text wrapping early — with half the room
+ * unused. Measuring the container lets the layout spread into the space it has
+ * (and, unlike scaling the SVG, the type stays at its natural size).
+ *
+ * Returns 0 before the first measurement and when there is no ResizeObserver
+ * (server rendering), so every caller must keep working from its own minimum.
+ */
+function useAvailableWidth(): [React.RefObject<HTMLDivElement | null>, number] {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const [width, setWidth] = useState(0);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver((entries) => {
+      setWidth(entries[0]?.contentRect.width ?? 0);
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+  return [ref, width];
+}
 
 /**
  * Flow and sequence diagrams, drawn as inline SVG.
@@ -28,6 +55,7 @@ const EDGE_TONE: Record<string, string> = {
 
 export function FlowDiagram({ block }: { block: FlowDiagramBlock }) {
   const [step, setStep] = useState<number>(-1);
+  const [scrollRef, availableW] = useAvailableWidth();
   const cols = Math.max(...block.nodes.map((n) => n.col)) + 1;
   const rows = Math.max(...block.nodes.map((n) => n.row)) + 1;
 
@@ -52,13 +80,21 @@ export function FlowDiagram({ block }: { block: FlowDiagramBlock }) {
   const sameRowLabels = block.edges
     .filter((e) => e.label && rowOf.get(e.from) === rowOf.get(e.to))
     .map((e) => labelW(e.label!));
-  const GAP_X = Math.max(44, Math.ceil(Math.max(0, ...sameRowLabels)) + 18);
+  const minGapX = Math.max(44, Math.ceil(Math.max(0, ...sameRowLabels)) + 18);
 
   const colW: number[] = [];
   for (let c = 0; c < cols; c += 1) {
     const inCol = block.nodes.filter((n) => n.col === c);
     colW[c] = inCol.length ? Math.max(...inCol.map(nodeWOf)) : 128;
   }
+
+  // Spread the columns into whatever width the panel actually has, rather than
+  // drawing a narrow diagram with the right-hand half of the panel left empty.
+  const gapsX = Math.max(1, cols - 1);
+  const nodesW = colW.reduce((sum, w) => sum + w, 0);
+  const fillGapX = availableW > 0 ? (availableW - nodesW - PAD * 2) / gapsX : 0;
+  const GAP_X = cols > 1 ? Math.max(minGapX, fillGapX) : minGapX;
+
   const colLeft: number[] = [];
   {
     let x = PAD;
@@ -98,7 +134,7 @@ export function FlowDiagram({ block }: { block: FlowDiagramBlock }) {
           )}
         </figcaption>
       )}
-      <div className="overflow-x-auto p-2">
+      <div ref={scrollRef} className="overflow-x-auto p-2">
         {/* No max-w-full: a genuinely wide diagram keeps its labels full-size
             and the container (overflow-x-auto) scrolls, rather than shrinking
             every label until it is unreadable. */}
@@ -210,7 +246,7 @@ export function SequenceDiagram({ block }: { block: SequenceBlock }) {
   // time. The old version revealed messages progressively, so it opened in its
   // final state and you had to hit Reset before you could watch it play.
   const [step, setStep] = useState(-1);
-  const laneW = 150;
+  const [scrollRef, availableW] = useAvailableWidth();
   // Actor pills are sized to their label, and the drawing leaves room for the
   // pills that sit at the first and last lanes — otherwise the outermost labels
   // spill outside the viewBox and get clipped (which is exactly what happened).
@@ -220,7 +256,18 @@ export function SequenceDiagram({ block }: { block: SequenceBlock }) {
   const GUTTER = 30; // left margin for the step-number badges
   const leftX = Math.max(GUTTER + 8, maxHalf) + 14;
   const headerH = 52;
-  const laneGap = Math.max(laneW, 176);
+
+  // Lanes must be at least far enough apart for the longest message label to sit
+  // on its arrow instead of spilling past both lifelines, and then spread to use
+  // whatever width the panel actually has.
+  const chipWOf = (label: string) => label.length * 6.1 + 16;
+  const widestLabel = Math.max(0, ...block.messages.map((m) => chipWOf(m.label)));
+  const lanes = Math.max(1, block.actors.length - 1);
+  const minGap = Math.max(176, Math.ceil(widestLabel) + 40);
+  const sideRoom = leftX + maxHalf + 16; // everything that is not lane gaps
+  const fillGap = availableW > 0 ? (availableW - sideRoom) / lanes : 0;
+  const laneGap = Math.max(minGap, fillGap);
+
   const laneX = (id: string) => leftX + block.actors.findIndex((a) => a.id === id) * laneGap;
   const rightX = leftX + (block.actors.length - 1) * laneGap;
   const width = rightX + maxHalf + 16;
@@ -265,8 +312,9 @@ export function SequenceDiagram({ block }: { block: SequenceBlock }) {
           </button>
         </span>
       </figcaption>
-      <div className="overflow-x-auto p-3">
-        <svg viewBox={`0 0 ${width} ${height}`} width={width} height={height} className="mx-auto block max-w-full">
+      <div ref={scrollRef} className="overflow-x-auto p-3">
+        {/* Sized to the measured width, so no max-w-full shrinking the type. */}
+        <svg viewBox={`0 0 ${width} ${height}`} width={width} height={height} className="block">
           <defs>
             {Object.entries(EDGE_TONE).map(([tone, color]) => (
               <marker key={tone} id={`seq-arrow-${tone}`} viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
