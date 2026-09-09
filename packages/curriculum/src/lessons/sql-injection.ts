@@ -1,0 +1,130 @@
+import type { Lesson } from '@cyberlab/core';
+
+export const sqlInjectionLesson: Lesson = {
+  id: 'web.sql-injection',
+  moduleId: 'mod.web-injection',
+  title: 'SQL Injection',
+  subtitle: 'Breaking out of the query into the query language',
+  status: 'ready',
+  difficulty: 'intermediate',
+  estimatedMinutes: 35,
+  skills: ['sqli', 'sql', 'http'],
+  prerequisites: ['web.broken-access-control'],
+  objectives: [
+    'Capire perché concatenare input in una query crea injection.',
+    'Aggirare un filtro con una tautologia e bypassare un login.',
+    'Esfiltrare dati da un’altra tabella con UNION SELECT.',
+    'Correggere il codice con query parametrizzate e verificarlo.',
+  ],
+  theory: [
+    { id: 'a-h', kind: 'heading', level: 2, eyebrow: 'SECTION A · THEORY', text: 'Il dato diventa codice' },
+    {
+      id: 'a-1',
+      kind: 'prose',
+      text: 'Una {{SQL injection:l’iniezione di sintassi SQL attraverso un input applicativo}} nasce da un unico errore: l’applicazione costruisce una query **incollando** l’input dell’utente dentro una stringa, invece di passarlo come **parametro** separato. In quel momento il confine tra “dato” e “codice” sparisce, e chiunque scriva nell’input può scrivere SQL.',
+    },
+    {
+      id: 'a-flow',
+      kind: 'flow',
+      title: 'Dove si perde il confine dato/codice',
+      nodes: [
+        { id: 'in', label: 'Input', sublabel: "nome = ' OR '1'='1", col: 0, row: 1, tone: 'default' },
+        { id: 'concat', label: 'Concatenazione', sublabel: '"… WHERE name=\'" + input', col: 1, row: 1, tone: 'danger', tooltip: 'Qui il dato diventa parte del codice SQL.' },
+        { id: 'sql', label: 'Query finale', sublabel: "… WHERE name='' OR '1'='1'", col: 2, row: 1, tone: 'danger' },
+        { id: 'db', label: 'Database', sublabel: 'esegue tutto', col: 3, row: 1, tone: 'accent' },
+      ],
+      edges: [
+        { from: 'in', to: 'concat', tone: 'danger' },
+        { from: 'concat', to: 'sql', tone: 'danger' },
+        { from: 'sql', to: 'db', tone: 'accent' },
+      ],
+    },
+    {
+      id: 'a-compare',
+      kind: 'comparison',
+      left: {
+        label: 'Vulnerabile — concatenazione',
+        tone: 'bad',
+        language: 'php',
+        code: "$q = \"SELECT * FROM accounts\n     WHERE user = '$u'\n       AND pass = '$p'\";",
+        note: "Con u = admin' --  la condizione sulla password sparisce.",
+      },
+      right: {
+        label: 'Corretto — parametri',
+        tone: 'good',
+        language: 'php',
+        code: "$q = 'SELECT * FROM accounts\n      WHERE user = ? AND pass = ?';\n$db->execute($q, [$u, $p]);",
+        note: 'L’input non può mai cambiare la struttura della query.',
+      },
+    },
+    {
+      id: 'a-builder',
+      kind: 'sql-builder',
+      labSpecId: 'lab.catalog',
+      template: "SELECT id, name, category, price_cents FROM products WHERE visible = 1 AND name LIKE '%{{input}}%'",
+      safeTemplate: 'SELECT id, name, category, price_cents FROM products WHERE visible = 1 AND name LIKE ?',
+      initialInput: 'keyboard',
+      suggestions: [
+        { label: 'Ricerca normale', value: 'keyboard' },
+        { label: 'Tautologia (mostra tutto, anche i nascosti)', value: "' OR '1'='1" },
+        { label: 'Rompi la sintassi (error-based)', value: "'" },
+        { label: 'UNION verso i segreti', value: "' UNION SELECT name, value, 3, 4 FROM secrets -- " },
+      ],
+    },
+    {
+      id: 'a-callout',
+      kind: 'callout',
+      variant: 'tip',
+      title: 'La regola pratica',
+      text: 'Se puoi far cambiare **il risultato** o **la struttura** di una query scrivendo caratteri come `\'`, `--`, `UNION`, allora l’input sta finendo nel codice. Un input parametrizzato non reagisce a nessuno di questi.',
+    },
+    {
+      id: 'a-legal',
+      kind: 'callout',
+      variant: 'legal',
+      title: 'Scope',
+      text: 'La SQL injection su sistemi non autorizzati è un reato. Qui operi su un database SQLite locale e isolato, creato apposta per questo laboratorio.',
+    },
+    {
+      id: 'a-kp',
+      kind: 'keypoints',
+      points: [
+        'La causa è sempre la stessa: input concatenato nella query invece che parametrizzato.',
+        "' OR '1'='1 rende la condizione sempre vera (tautologia).",
+        'UNION SELECT aggiunge righe da un’altra tabella, con lo stesso numero di colonne.',
+        'Un errore SQL verboso è informazione: rivela struttura e a volte dati.',
+        'La difesa è una sola e definitiva: query parametrizzate (prepared statements).',
+      ],
+    },
+  ],
+  practice: [
+    { id: 'b-h', kind: 'heading', level: 2, eyebrow: 'SECTION B · INTERACTIVE', text: 'Prima di attaccare, ragiona' },
+    {
+      id: 'b-quiz',
+      kind: 'quiz',
+      question: "Il login esegue: SELECT * FROM accounts WHERE user='$u' AND pass='$p'. Quale valore di $u ti fa entrare come admin senza conoscerne la password?",
+      options: [
+        { id: 'a', text: "admin" },
+        { id: 'b', text: "admin' -- " },
+        { id: 'c', text: "' OR 1=1" },
+        { id: 'd', text: "admin\"; DROP TABLE accounts" },
+      ],
+      correct: ['b'],
+      explanation:
+        "admin' --  chiude la stringa dello username e commenta il resto della query, inclusa la condizione AND pass='...'. Rimane WHERE user='admin', che restituisce la riga admin: sei dentro. (' OR 1=1 spesso logga come il primo utente, non necessariamente admin.)",
+      skills: ['sqli'],
+    },
+    { id: 'b-bridge', kind: 'callout', variant: 'tip', title: 'Ora nel lab →', text: 'Apri il Live Lab. Prova prima la ricerca, poi il login staff. Il pannello database ti mostra lo schema reale su cui stai lavorando.' },
+  ],
+  labSpecId: 'lab.catalog',
+  exercises: ['ex.sqli.bypass', 'ex.sqli.exfil', 'ex.sqli.fix'],
+  recap: [
+    'SQLi = input che diventa codice per mancanza di parametrizzazione.',
+    'Bypass di login con tautologia/commento; esfiltrazione con UNION.',
+    'Fix definitivo: prepared statements con parametri.',
+  ],
+  furtherReading: [
+    { title: 'OWASP: SQL Injection', url: 'https://owasp.org/www-community/attacks/SQL_Injection' },
+    { title: 'PortSwigger: SQL injection', url: 'https://portswigger.net/web-security/sql-injection' },
+  ],
+};

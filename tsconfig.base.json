@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "compilerOptions": {
+    "target": "ES2023",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "resolveJsonModule": true,
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true,
+    "noEmit": true,
+
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "useUnknownInCatchVariables": true,
+
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+
+    "baseUrl": ".",
+    "paths": {
+      "@cyberlab/core": ["packages/core/src/index.ts"],
+      "@cyberlab/core/*": ["packages/core/src/*"],
+      "@cyberlab/lab-engine": ["packages/lab-engine/src/index.ts"],
+      "@cyberlab/lab-engine/*": ["packages/lab-engine/src/*"],
+      "@cyberlab/curriculum": ["packages/curriculum/src/index.ts"],
+      "@cyberlab/curriculum/*": ["packages/curriculum/src/*"],
+      "@cyberlab/ai": ["packages/ai/src/index.ts"],
+      "@cyberlab/ai/*": ["packages/ai/src/*"]
+    }
+  }
+}

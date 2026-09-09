@@ -1,0 +1,316 @@
+@import 'tailwindcss';
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   CyberLab design system.
+
+   Dark-first, IDE-inspired, but its own identity: a deep blue-black ground
+   ("abyss"), a single cool-blue primary ("signal"), a mint success ("flux") and
+   a coral danger ("breach"). Type is a modern grotesque for UI and a real mono
+   for anything that is code, a terminal, or a payload. Nothing here imitates a
+   specific product's chrome.
+   ──────────────────────────────────────────────────────────────────────────── */
+
+@theme {
+  --font-sans: 'Inter var', 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', 'SFMono-Regular', Menlo, Consolas, monospace;
+
+  --color-abyss-900: #070a11;
+  --color-abyss-800: #0b0f17;
+  --color-abyss-700: #10151f;
+  --color-abyss-600: #161c28;
+  --color-abyss-500: #1d2431;
+  --color-line: #232c3b;
+  --color-line-strong: #313d52;
+
+  --color-ink-500: #6b7688;
+  --color-ink-400: #8a95a8;
+  --color-ink-300: #aab4c6;
+  --color-ink-200: #ccd4e0;
+  --color-ink-100: #eaeef5;
+
+  --color-signal: #4f8cff;
+  --color-signal-dim: #2b4f8f;
+  --color-flux: #34e2b0;
+  --color-flux-dim: #1d7a63;
+  --color-breach: #ff5d6c;
+  --color-breach-dim: #8f2b34;
+  --color-amber: #ffb454;
+  --color-violet: #a98bff;
+}
+
+:root {
+  color-scheme: dark;
+  --shadow-panel: 0 1px 0 rgba(255, 255, 255, 0.02) inset, 0 8px 24px -12px rgba(0, 0, 0, 0.6);
+  --radius: 10px;
+}
+
+* {
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--color-abyss-900);
+  color: var(--color-ink-200);
+  font-family: var(--font-sans);
+  font-size: 13.5px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow: hidden;
+}
+
+::selection {
+  background: color-mix(in oklab, var(--color-signal) 40%, transparent);
+}
+
+/* Scrollbars — thin, quiet, IDE-like. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-line-strong) transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--color-line-strong);
+  border-radius: 6px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--color-ink-500);
+  background-clip: content-box;
+}
+
+/* ── primitives ────────────────────────────────────────────────────────────── */
+
+.panel {
+  background: var(--color-abyss-800);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius);
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-feature-settings: 'liga' 0;
+}
+
+.focus-ring {
+  outline: 2px solid transparent;
+}
+.focus-ring:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--color-signal) 70%, transparent);
+  outline-offset: 1px;
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 7px;
+  border: 1px solid var(--color-line-strong);
+  background: var(--color-abyss-600);
+  color: var(--color-ink-200);
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background 0.14s ease,
+    border-color 0.14s ease,
+    transform 0.06s ease,
+    color 0.14s ease;
+  user-select: none;
+}
+.btn:hover {
+  background: var(--color-abyss-500);
+  border-color: var(--color-ink-500);
+}
+.btn:active {
+  transform: translateY(0.5px);
+}
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.btn-primary {
+  background: var(--color-signal);
+  border-color: transparent;
+  color: #051023;
+  font-weight: 600;
+}
+.btn-primary:hover {
+  background: color-mix(in oklab, var(--color-signal) 88%, white);
+  border-color: transparent;
+}
+.btn-ghost {
+  background: transparent;
+  border-color: transparent;
+}
+.btn-ghost:hover {
+  background: var(--color-abyss-600);
+  border-color: transparent;
+}
+.btn-danger {
+  border-color: var(--color-breach-dim);
+  color: var(--color-breach);
+}
+.btn-danger:hover {
+  background: color-mix(in oklab, var(--color-breach) 14%, transparent);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--color-line-strong);
+  font-size: 11px;
+  color: var(--color-ink-400);
+  white-space: nowrap;
+}
+
+kbd {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 1px 5px;
+  border-radius: 5px;
+  border: 1px solid var(--color-line-strong);
+  border-bottom-width: 2px;
+  background: var(--color-abyss-700);
+  color: var(--color-ink-300);
+}
+
+input,
+textarea,
+select {
+  font: inherit;
+  color: var(--color-ink-100);
+  background: var(--color-abyss-900);
+  border: 1px solid var(--color-line-strong);
+  border-radius: 7px;
+  padding: 7px 10px;
+}
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--color-signal);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-signal) 20%, transparent);
+}
+textarea {
+  resize: vertical;
+}
+
+a {
+  color: var(--color-signal);
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+
+/* ── animations ────────────────────────────────────────────────────────────── */
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes pop-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  60% {
+    transform: scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-flux) 55%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 12px transparent;
+  }
+}
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+@keyframes blink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.28s ease both;
+}
+.animate-pop-in {
+  animation: pop-in 0.34s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.animate-slide-up {
+  animation: slide-up 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.pulse-ring {
+  animation: pulse-ring 0.9s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* xterm sizing */
+.xterm {
+  height: 100%;
+  padding: 8px 10px;
+}
+.xterm-viewport {
+  background: transparent !important;
+}
