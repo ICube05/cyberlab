@@ -3,6 +3,8 @@ import type { ContentBlock } from '@cyberlab/core';
 import { renderInline } from './inline.js';
 import { FlowDiagram, SequenceDiagram } from './Diagram.js';
 import { HttpExchange, PermissionBits, Quiz, SqlBuilder } from './Interactive.js';
+import { CookieJar } from './CookieJar.js';
+import { JwtInspector } from './JwtInspector.js';
 import { Icon } from '../../icons.js';
 import { DARCULA, normaliseLanguage } from '../../syntax.js';
 import { highlight } from '../lab/CodeEditor.js';
@@ -172,14 +174,10 @@ function BlockBody({ block, lessonId }: { block: ContentBlock; lessonId: string 
       return <PermissionBits block={block} />;
 
     case 'cookie-jar':
+      return <CookieJar block={block} />;
+
     case 'jwt':
-      // Not used by the ready lessons; render a graceful placeholder rather than
-      // pretending. Left as an obvious extension point.
-      return (
-        <div className="my-4 rounded-xl border border-dashed border-[var(--color-line-strong)] p-4 text-[12.5px] text-[var(--color-ink-500)]">
-          Blocco interattivo “{block.kind}” — disponibile nelle lezioni che lo usano.
-        </div>
-      );
+      return <JwtInspector block={block} />;
   }
 }
 

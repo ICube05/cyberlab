@@ -106,6 +106,7 @@ export class ProgressService {
       lesson.startedAt ??= Date.now();
     }
     if (firstView) awardXp(progress, XP_AWARDS.lessonTheory);
+    maybeCompleteTheoryLesson(progress, lessonId);
     touchStreak(progress);
     this.store.saveProgress(progress);
     return progress;
@@ -135,6 +136,7 @@ export class ProgressService {
         }
       }
     }
+    maybeCompleteTheoryLesson(progress, lessonId);
     touchStreak(progress);
     this.store.saveProgress(progress);
     return progress;
@@ -230,6 +232,38 @@ export class ProgressService {
 }
 
 // ── helpers ──────────────────────────────────────────────────────────────────
+
+/**
+ * Complete a lesson that has no graded missions.
+ *
+ * A `theory-only` lesson can never pass "all its exercises", because it has
+ * none — so without this it would sit at `in-progress` forever and every lesson
+ * that lists it as a prerequisite would stay locked. Reading is the work here,
+ * so the bar is the honest equivalent: every content block seen, and every
+ * inline quiz answered correctly. Lessons with missions are untouched; their
+ * completion still comes from the graded path.
+ */
+function maybeCompleteTheoryLesson(progress: UserProgress, lessonId: string): boolean {
+  const definition = getLesson(lessonId);
+  if (!definition || definition.exercises.length > 0 || definition.status === 'planned') return false;
+
+  const lesson = progress.lessons[lessonId];
+  if (!lesson || lesson.state === 'completed' || lesson.state === 'mastered') return false;
+
+  const blocks = [...definition.theory, ...(definition.practice ?? [])];
+  if (blocks.length === 0) return false;
+
+  const seen = new Set(lesson.blocksSeen);
+  const allSeen = blocks.every((block) => seen.has(block.id));
+  const quizzes = blocks.filter((block) => block.kind === 'quiz');
+  const allQuizzesPassed = quizzes.every((quiz) => lesson.quiz[quiz.id]?.correct);
+  if (!allSeen || !allQuizzesPassed) return false;
+
+  lesson.state = 'completed';
+  lesson.completedAt = Date.now();
+  awardXp(progress, XP_AWARDS.lessonComplete);
+  return true;
+}
 
 function ensureLessonProgress(progress: UserProgress, lessonId: string) {
   progress.lessons[lessonId] ??= emptyLessonProgress(lessonId, 'in-progress');
