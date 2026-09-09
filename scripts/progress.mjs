@@ -20,6 +20,7 @@
  *     silently discarding one side's work.
  */
 import { execFileSync } from 'node:child_process';
+import { DatabaseSync } from 'node:sqlite';
 import { existsSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -53,6 +54,28 @@ function hasChanges() {
   return git(['status', '--porcelain', '--', DB]).out.length > 0;
 }
 
+/**
+ * How many learners the database has anything recorded for.
+ *
+ * Zero means the file was just created and nothing has been studied in it yet —
+ * the signal that distinguishes "a fresh empty database" from "a session worth
+ * committing". Unreadable counts as unknown (-1) so a quirk here can never be
+ * the reason a real save is skipped.
+ */
+function countProgressRows() {
+  try {
+    const db = new DatabaseSync(resolve(ROOT, DB), { readOnly: true });
+    try {
+      const row = db.prepare('SELECT COUNT(*) AS n FROM progress').get();
+      return Number(row?.n ?? 0);
+    } finally {
+      db.close();
+    }
+  } catch {
+    return -1;
+  }
+}
+
 export function saveProgress({ quiet = false } = {}) {
   if (!git(['rev-parse', '--is-inside-work-tree']).ok) return { status: 'skipped', reason: 'not a git repository' };
   if (!existsSync(resolve(ROOT, DB))) return { status: 'skipped', reason: 'no database yet' };
@@ -69,6 +92,18 @@ export function saveProgress({ quiet = false } = {}) {
   }
 
   if (!hasChanges()) return { status: 'clean', reason: 'nothing new' };
+
+  // Never let an empty database overwrite a saved one.
+  //
+  // `pnpm clean` deletes apps/server/data, and a fresh clone starts without it;
+  // the server then recreates an empty database, and committing that on top of
+  // the tracked one would erase the very progress this is meant to protect.
+  // Nothing recorded means nothing to save — say so and stop.
+  if (isTracked() && countProgressRows() === 0) {
+    warn('il database è vuoto (ricreato da zero?): non lo committo sopra i progressi già salvati.');
+    warn(`  per ripristinare quelli nel repo: ${C.green}git checkout -- ${DB}${C.reset}`);
+    return { status: 'skipped', reason: 'refusing to overwrite with an empty database' };
+  }
 
   const stamp = new Date().toISOString().slice(0, 16).replace('T', ' ');
   git(['add', '--', DB]);
