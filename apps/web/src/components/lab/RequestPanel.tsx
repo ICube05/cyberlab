@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { HttpResponseView } from '@cyberlab/core';
 import { useStore } from '../../store.js';
 import { Icon } from '../../icons.js';
@@ -17,12 +17,28 @@ export function RequestPanel() {
   const lastAction = useStore((s) => s.lastAction);
   const busy = useStore((s) => s.labBusy);
   const lab = useStore((s) => s.lab);
+  // Where this particular target wants you to start. The panel used to open on
+  // one hard-coded Broken Access Control path for every lab, so the first
+  // request you sent on any other target 404'd for no visible reason.
+  const entryPath = useStore((s) => s.lesson?.lab?.entryPath) ?? '/';
 
   const [method, setMethod] = useState('GET');
-  const [path, setPath] = useState('/profile.php?id=15');
+  const [path, setPath] = useState(entryPath);
   const [headers, setHeaders] = useState('');
   const [body, setBody] = useState('');
   const [tab, setTab] = useState<'pretty' | 'raw' | 'notes'>('pretty');
+
+  // Follow the lab, not the mount: switching lesson swaps the target underneath
+  // this panel, and keeping the previous target's URL is how you end up sending
+  // /profile.php at the XSS lab. Only on a real change, so what you typed for
+  // the current lab is never overwritten.
+  const lastSpec = useRef(lab?.specId);
+  useEffect(() => {
+    if (lab?.specId && lab.specId !== lastSpec.current) {
+      lastSpec.current = lab.specId;
+      setPath(entryPath);
+    }
+  }, [lab?.specId, entryPath]);
 
   const response = lastAction?.result.type === 'http.response' ? lastAction.result.response : undefined;
 

@@ -38,6 +38,14 @@ export interface LabSpec {
     host: string;
   };
   surfaces: LabSurface[];
+  /**
+   * Where the request panel starts, e.g. `/cerca?q=test`.
+   *
+   * Without it the panel had one hard-coded path for every lab — a Broken
+   * Access Control URL that 404s on every other target, so the first request
+   * you sent anywhere else failed for no reason you could see.
+   */
+  entryPath?: string;
   /** Human-readable description of the world at t=0. */
   initialState: string[];
   /** Credentials the learner is *given*. Anything else must be earned. */
