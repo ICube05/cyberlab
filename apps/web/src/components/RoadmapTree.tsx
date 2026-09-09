@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import type { LessonState, LessonStatus } from '@cyberlab/core';
 import { useStore } from '../store.js';
 import { Icon, LEVEL_ICONS } from '../icons.js';
@@ -125,7 +125,10 @@ export function RoadmapTree() {
                   {done}/{total}
                 </span>
               </button>
-              {!levelCollapsed && (
+              {/* Height animates via the grid-template-rows 0fr→1fr technique —
+                  the reliable way to transition to auto height. The content
+                  stays mounted so the fold is smooth in both directions. */}
+              <Collapsible open={!levelCollapsed}>
                 <div className="ml-3.5 border-l border-[var(--color-line)] pl-1.5">
                   {modules.map((module) => {
                     const moduleCollapsed = collapsed.has(module.id);
@@ -147,8 +150,8 @@ export function RoadmapTree() {
                             {module.title}
                           </span>
                         </button>
-                        {!moduleCollapsed &&
-                          module.lessons
+                        <Collapsible open={!moduleCollapsed} duration={180}>
+                          {module.lessons
                             .map((lid) => curriculum.lessons.find((l) => l.id === lid))
                             .filter(Boolean)
                             .map((lesson) => (
@@ -163,15 +166,43 @@ export function RoadmapTree() {
                                 onClick={() => openLesson(lesson!.id)}
                               />
                             ))}
+                        </Collapsible>
                       </div>
                     );
                   })}
                 </div>
-              )}
+              </Collapsible>
             </div>
           );
         })}
       </div>
+    </div>
+  );
+}
+
+/**
+ * An open/close container that animates its height.
+ *
+ * CSS cannot transition to `height: auto`, so we animate a grid track instead:
+ * `grid-template-rows` from `0fr` to `1fr`, with the child clipped by
+ * `overflow-hidden`. The content is always mounted, which is what lets the
+ * fold animate smoothly in both directions rather than popping in and out.
+ */
+function Collapsible({
+  open,
+  duration = 220,
+  children,
+}: {
+  open: boolean;
+  duration?: number;
+  children: ReactNode;
+}) {
+  return (
+    <div
+      className="grid"
+      style={{ gridTemplateRows: open ? '1fr' : '0fr', transition: `grid-template-rows ${duration}ms ease` }}
+    >
+      <div className="overflow-hidden">{children}</div>
     </div>
   );
 }

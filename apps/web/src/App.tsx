@@ -113,16 +113,39 @@ export function App() {
             )}
           </div>
 
-          {tutorOpen ? (
-            <div className="w-[340px] shrink-0 border-l border-[var(--color-line)]">
+          {/*
+            The tutor docks/undocks with an animated width. The panel stays
+            mounted at a fixed 340px, anchored to the right and clipped by the
+            container, so closing slides it out (and fades in the handle)
+            instead of popping; the chat state survives the toggle too.
+          */}
+          <div
+            className="relative shrink-0 overflow-hidden border-l border-[var(--color-line)] bg-[var(--color-abyss-800)]"
+            style={{ width: tutorOpen ? 340 : 32, transition: 'width 260ms cubic-bezier(0.4, 0, 0.2, 1)' }}
+          >
+            <div
+              className="absolute inset-y-0 right-0 w-[340px]"
+              style={{
+                opacity: tutorOpen ? 1 : 0,
+                transition: 'opacity 200ms ease-out',
+                pointerEvents: tutorOpen ? 'auto' : 'none',
+              }}
+              aria-hidden={!tutorOpen}
+            >
               <TutorPanel />
             </div>
-          ) : (
-            // A collapsed panel still needs a handle, or it is just gone.
+            {/* A collapsed panel still needs a handle, or it is just gone. */}
             <button
               onClick={() => toggleTutor(true)}
               title="Apri il tutor (⌘J)"
-              className="group flex w-8 shrink-0 flex-col items-center gap-2 border-l border-[var(--color-line)] bg-[var(--color-abyss-800)] py-2.5 text-[var(--color-ink-500)] transition-colors hover:text-[var(--color-violet)]"
+              className="group absolute inset-y-0 left-0 flex w-8 flex-col items-center gap-2 py-2.5 text-[var(--color-ink-500)] transition-colors hover:text-[var(--color-violet)]"
+              style={{
+                opacity: tutorOpen ? 0 : 1,
+                transition: 'opacity 200ms ease-out',
+                pointerEvents: tutorOpen ? 'none' : 'auto',
+              }}
+              aria-hidden={tutorOpen}
+              tabIndex={tutorOpen ? -1 : 0}
             >
               <Icon.sparkles size={15} />
               <span
@@ -132,7 +155,7 @@ export function App() {
                 Tutor
               </span>
             </button>
-          )}
+          </div>
         </main>
       </div>
       <StatusBar />
