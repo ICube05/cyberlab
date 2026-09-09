@@ -147,6 +147,30 @@ export function parseCookieHeader(header: string): Record<string, string> {
 
 // ── Response helpers ───────────────────────────────────────────────────────
 
+/**
+ * Why a POST arrived with none of its form fields.
+ *
+ * `form` is parsed only for `application/x-www-form-urlencoded`, so a body sent
+ * as JSON — a very natural thing to try from a request console — leaves every
+ * field undefined. A handler that then answers "ticket inesistente" or
+ * "credenziali errate" blames the *data* for what is really an *encoding*
+ * problem, and sends the learner hunting for a bug that is not there.
+ *
+ * Returns the explanation to hand back, or null when there is nothing to say.
+ */
+export function formBodyProblem(req: TargetHttpRequest): string | null {
+  if (Object.keys(req.form).length > 0) return null;
+  const body = req.body.trim();
+  if (!body) return null;
+  const contentType = req.headers['content-type'] ?? '(nessuno)';
+  const asJson = req.json !== undefined ? ' Il corpo è JSON valido, ma questa applicazione non lo legge.' : '';
+  return (
+    `Il corpo non è stato interpretato come form: Content-Type "${contentType}".${asJson} ` +
+    'Questa applicazione legge application/x-www-form-urlencoded, lo stesso formato che invia il form della pagina ' +
+    '(per esempio: id=4103&autore=cliente&testo=ciao).'
+  );
+}
+
 export function html(body: string, init: Partial<TargetHttpResponse> = {}): TargetHttpResponse {
   return {
     status: init.status ?? 200,

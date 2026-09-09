@@ -10,6 +10,7 @@ import {
   tpl,
   type TargetHttpRequest,
   type TargetHttpResponse,
+  formBodyProblem,
 } from '../http.js';
 import type { LabTarget, TargetBuilder, TargetContext } from '../target.js';
 
@@ -298,6 +299,14 @@ function buildRouter(target: InjectionTarget): Router<TargetContext> {
   router.get('/login', (req) => loginPage(req.query['error']));
 
   router.post('/login', (req, ctx) => {
+    // An unreadable body is an encoding problem, not a wrong password.
+    const problem = formBodyProblem(req);
+    if (problem) {
+      return html(page('Accesso staff', `<div class="card"><p class="error">${problem}</p></div>`), {
+        status: 400,
+        serverNotes: [problem],
+      });
+    }
     const username = req.form['username'] ?? '';
     const password = req.form['password'] ?? '';
     const patched = target.state.patched.login;
