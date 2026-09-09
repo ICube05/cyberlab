@@ -71,6 +71,23 @@ body {
   background: color-mix(in oklab, var(--color-signal) 40%, transparent);
 }
 
+/*
+ * Anything clickable says so on hover.
+ *
+ * `.btn` set its own pointer, but the bare <button>s — the folders in the
+ * lesson tree, the panel toggles, the quiz options — kept the default arrow,
+ * so nothing signalled that a level or a module could be opened and closed.
+ * One rule here beats a `cursor-pointer` class sprinkled over every control.
+ */
+button:not(:disabled),
+summary,
+[role='button']:not([aria-disabled='true']) {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: not-allowed;
+}
+
 /* Scrollbars — thin, quiet, IDE-like. */
 * {
   scrollbar-width: thin;
