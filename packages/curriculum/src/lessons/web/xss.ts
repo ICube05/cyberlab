@@ -14,11 +14,12 @@ export const xssLesson: Lesson = {
   moduleId: 'mod.web-client',
   title: 'Cross-Site Scripting (XSS)',
   subtitle: 'Far eseguire il tuo codice nella pagina di qualcun altro',
-  status: 'theory-only',
+  status: 'ready',
   difficulty: 'intermediate',
   skills: ['xss', 'encoding', 'http'],
   estimatedMinutes: 35,
   prerequisites: ['web.broken-access-control'],
+  labSpecId: 'lab.helpdesk',
   objectives: [
     'Distinguere XSS riflesso, persistente e DOM-based da come viaggia il payload.',
     'Riconoscere il contesto di output e capire perché decide l’encoding corretto.',
@@ -236,6 +237,12 @@ el.textContent = q;   // testo, sicuro
       skills: ['xss'],
     },
     {
+      id: 'lab-bridge',
+      kind: 'callout',
+      variant: 'tip',
+      text: 'Ora nel Live Lab (Helpdesk). La ricerca riflette il tuo input e i commenti dei ticket vengono mostrati anche agli agenti: prova un payload nella ricerca, poi in un commento, e guarda i serverNotes quando l’agente apre il ticket. Le missioni sono valutate su ciò che il target dichiara di aver fatto, non sul testo del tuo payload.',
+    },
+    {
       id: 'e-kp',
       kind: 'keypoints',
       title: 'Da portarsi via',
@@ -267,5 +274,5 @@ el.textContent = q;   // testo, sicuro
     { title: 'MDN: Content Security Policy', url: 'https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP' },
     { title: 'OWASP DOM-based XSS Prevention', url: 'https://cheatsheetseries.owasp.org/cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.html', note: 'La mappa completa source → sink.' },
   ],
-  exercises: [],
+  exercises: ['ex.xss.reflected', 'ex.xss.stored', 'ex.xss.fix'],
 };

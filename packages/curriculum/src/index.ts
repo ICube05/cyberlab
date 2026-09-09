@@ -41,6 +41,8 @@ import { linuxPrivescLesson } from './lessons/linux-privesc.js';
 import { brokenAccessControlExercises } from './exercises/broken-access-control.js';
 import { sqlInjectionExercises } from './exercises/sql-injection.js';
 import { linuxPrivescExercises } from './exercises/linux-privesc.js';
+import { xssExercises } from './exercises/xss.js';
+import { pathTraversalExercises } from './exercises/path-traversal.js';
 
 export { generateExercise, type GenerateInput, type GeneratedExercise } from './generator.js';
 export { SKILLS, SKILL_BY_ID } from './skills.js';
@@ -59,7 +61,7 @@ export { LEVELS, MODULES, PLANNED_LESSONS } from './roadmap.js';
  */
 
 /** Lessons with a live lab and graded missions. */
-const READY_LESSONS: Lesson[] = [brokenAccessControlLesson, sqlInjectionLesson, linuxPrivescLesson];
+const READY_LESSONS: Lesson[] = [brokenAccessControlLesson, sqlInjectionLesson, linuxPrivescLesson, xssLesson, pathTraversalLesson];
 
 /**
  * Lessons with full authored theory and interactive blocks, but no lab yet.
@@ -81,11 +83,9 @@ const THEORY_LESSONS: Lesson[] = [
   linuxPermissionsLesson,
   httpCookiesLesson,
   commandInjectionLesson,
-  xssLesson,
   csrfLesson,
   ssrfLesson,
   jwtLesson,
-  pathTraversalLesson,
   fileUploadLesson,
   businessLogicLesson,
 ];
@@ -96,6 +96,8 @@ export const EXERCISES: Exercise[] = [
   ...brokenAccessControlExercises,
   ...sqlInjectionExercises,
   ...linuxPrivescExercises,
+  ...xssExercises,
+  ...pathTraversalExercises,
 ];
 
 export const COURSE: Course = {

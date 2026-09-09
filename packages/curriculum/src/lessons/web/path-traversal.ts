@@ -15,11 +15,12 @@ export const pathTraversalLesson: Lesson = {
   moduleId: 'mod.web-advanced',
   title: 'Path Traversal',
   subtitle: 'Uscire dalla cartella in cui l’applicazione voleva tenerti',
-  status: 'theory-only',
+  status: 'ready',
   difficulty: 'intermediate',
   skills: ['path-traversal', 'permissions', 'http'],
   estimatedMinutes: 30,
   prerequisites: ['found.linux-permissions', 'web.ssrf'],
+  labSpecId: 'lab.helpdesk',
   objectives: [
     'Riconoscere gli endpoint che costruiscono un percorso di file da input utente.',
     'Uscire da una directory prevista con `../` e le sue varianti codificate.',
@@ -207,6 +208,12 @@ if not finale.is_relative_to(base):
       skills: ['path-traversal'],
     },
     {
+      id: 'lab-bridge',
+      kind: 'callout',
+      variant: 'tip',
+      text: 'Ora nel Live Lab (Helpdesk). Il download allegati è /allegato?file=…: parti da un file legittimo, guarda il percorso risolto nei serverNotes, poi risali con ../ verso /etc/passwd e il .env dell’app. Prova anche /etc/shadow e osserva la differenza — è il permesso a fermarti, non un filtro.',
+    },
+    {
       id: 'd-kp',
       kind: 'keypoints',
       title: 'Da portarsi via',
@@ -237,5 +244,5 @@ if not finale.is_relative_to(base):
     { title: 'PortSwigger: Directory traversal', url: 'https://portswigger.net/web-security/file-path-traversal' },
     { title: 'OWASP File Upload / Input Validation Cheat Sheet', url: 'https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html' },
   ],
-  exercises: [],
+  exercises: ['ex.pt.escape', 'ex.pt.permission', 'ex.pt.fix'],
 };

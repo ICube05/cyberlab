@@ -81,6 +81,34 @@ export const LABS: LabSpec[] = [
     seedable: true,
     notes: ['I permessi sono applicati davvero: cat /root/flag.txt fallisce finché non sei root.'],
   },
+  {
+    id: 'lab.helpdesk',
+    title: 'Helpdesk — customer support portal',
+    subtitle: 'XSS e path traversal',
+    kind: 'web',
+    builderId: 'web.helpdesk',
+    scenario:
+      'Il portale di assistenza "Helpdesk" ha una ricerca ticket, commenti pubblici e un download di allegati. Due difetti convivono: contenuto utente reso senza escape e un percorso di file costruito per concatenazione. Dimostrali — furto della sessione di un agente via XSS, lettura di file fuori dalla cartella allegati — poi rendili sicuri modificando config.json.',
+    target: {
+      name: 'Helpdesk',
+      description:
+        'Un portale di supporto che rende i commenti senza escape e serve gli allegati concatenando il nome file. La configurazione è un vero file JSON modificabile.',
+      host: 'helpdesk.lab',
+    },
+    surfaces: ['request', 'browser', 'files', 'editor', 'logs'],
+    initialState: [
+      'La ricerca e i commenti sono pubblici, nessun login richiesto.',
+      'Un agente di supporto apre i ticket poco dopo che ricevono un commento.',
+      'Gli allegati si scaricano da /allegato?file=nome.txt.',
+      'config.escapeOutput è false e config.confineAttachments è false.',
+    ],
+    seedable: true,
+    notes: [
+      'Tutto è locale e isolato. Nessuna richiesta lascia il laboratorio.',
+      'La lettura degli allegati passa dallo stesso filesystem con permessi veri: giri come www-data.',
+      'Le correzioni si applicano in /srv/helpdesk/config.json, dallo stesso pannello editor.',
+    ],
+  },
 ];
 
 export const LAB_BY_ID: Map<string, LabSpec> = new Map(LABS.map((l) => [l.id, l]));
