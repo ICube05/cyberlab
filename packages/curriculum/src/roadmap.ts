@@ -106,7 +106,6 @@ export const PLANNED_LESSONS: Lesson[] = [
   // Foundations
 
   // Web
-  planned('mod.web-injection', { id: 'web.command-injection', title: 'Command Injection', skills: ['cmdi', 'http'], difficulty: 'intermediate', prerequisites: ['web.sql-injection'], outline: ['Quando l’input finisce in una shell', 'Metacaratteri e concatenatori', 'Blind command injection', 'Mitigazione: niente shell, argomenti separati'] }),
   planned('mod.web-client', { id: 'web.xss', title: 'Cross-Site Scripting (XSS)', skills: ['xss'], difficulty: 'intermediate', prerequisites: ['web.broken-access-control'], outline: ['Reflected, stored, DOM-based', 'Contesti di output e encoding', 'Impatto: furto di sessione, azioni per conto della vittima', 'CSP e mitigazioni'] }),
   planned('mod.web-client', { id: 'web.csrf', title: 'CSRF', skills: ['csrf', 'cookies'], difficulty: 'intermediate', outline: ['L’abuso della sessione implicita', 'Token anti-CSRF', 'SameSite come difesa', 'Quando CSRF è irrilevante'] }),
   planned('mod.web-advanced', { id: 'web.ssrf', title: 'SSRF', skills: ['ssrf'], difficulty: 'advanced', outline: ['Far fare richieste al server', 'Accesso a servizi interni e metadata cloud', 'Filtri e bypass', 'Mitigazione: allow-list'] }),
