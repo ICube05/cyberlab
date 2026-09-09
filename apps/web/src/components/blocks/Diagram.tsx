@@ -150,7 +150,11 @@ export function FlowDiagram({ block }: { block: FlowDiagramBlock }) {
 }
 
 export function SequenceDiagram({ block }: { block: SequenceBlock }) {
-  const [revealed, setRevealed] = useState(block.messages.length);
+  // Highlight-based walkthrough, like the flow diagram: the whole exchange is
+  // visible at rest (step -1) and stepping just spotlights one message at a
+  // time. The old version revealed messages progressively, so it opened in its
+  // final state and you had to hit Reset before you could watch it play.
+  const [step, setStep] = useState(-1);
   const laneW = 150;
   // Actor pills are sized to their label, and the drawing leaves room for the
   // pills that sit at the first and last lanes — otherwise the outermost labels
@@ -180,17 +184,21 @@ export function SequenceDiagram({ block }: { block: SequenceBlock }) {
   return (
     <figure className="my-4 overflow-hidden rounded-xl border border-[var(--color-line)] bg-[var(--color-abyss-900)]">
       <figcaption className="flex items-center justify-between border-b border-[var(--color-line)] px-4 py-2 text-[12px] font-medium text-[var(--color-ink-300)]">
-        <span>Sequenza client / server</span>
-        <span className="flex items-center gap-1">
-          <button className="btn btn-ghost !px-1.5 !py-1" onClick={() => setRevealed(1)} title="Ricomincia">
-            <Icon.refresh size={13} />
+        <span className="min-w-0 truncate">Sequenza client / server</span>
+        <span className="flex shrink-0 items-center gap-1">
+          <button className="btn btn-ghost !px-1.5 !py-1" onClick={() => setStep((s) => Math.max(-1, s - 1))} disabled={step < 0} title="Passo precedente">
+            <Icon.chevronRight size={13} className="rotate-180" />
           </button>
+          <span className="mono w-10 text-center text-[11px] text-[var(--color-ink-500)]">
+            {step < 0 ? '—' : `${step + 1}/${block.messages.length}`}
+          </span>
           <button
-            className="btn btn-ghost !px-2 !py-1 text-[11px]"
-            onClick={() => setRevealed((r) => Math.min(block.messages.length, r + 1))}
-            disabled={revealed >= block.messages.length}
+            className="btn btn-ghost !px-1.5 !py-1"
+            onClick={() => setStep((s) => Math.min(block.messages.length - 1, s + 1))}
+            disabled={step >= block.messages.length - 1}
+            title="Passo successivo"
           >
-            Passo →
+            <Icon.chevronRight size={13} />
           </button>
         </span>
       </figcaption>
@@ -221,7 +229,8 @@ export function SequenceDiagram({ block }: { block: SequenceBlock }) {
           })}
 
           {/* messages */}
-          {block.messages.slice(0, revealed).map((msg, i) => {
+          {block.messages.map((msg, i) => {
+            const dimmed = step >= 0 && i !== step;
             const yLine = rowTop[i]! + 22;
             const x1 = laneX(msg.from);
             const x2 = laneX(msg.to);
@@ -232,10 +241,10 @@ export function SequenceDiagram({ block }: { block: SequenceBlock }) {
             const chipW = msg.label.length * 6.1 + 16;
 
             return (
-              <g key={i} className="animate-fade-in">
+              <g key={i} style={{ opacity: dimmed ? 0.24 : 1, transition: 'opacity 0.3s' }}>
                 {/* step badge */}
-                <circle cx={16} cy={yLine} r={9} fill="var(--color-abyss-700)" stroke="var(--color-line-strong)" />
-                <text x={16} y={yLine + 3.5} textAnchor="middle" fontSize={10} className="mono" fill="var(--color-ink-400)">
+                <circle cx={16} cy={yLine} r={9} fill={step === i ? color : 'var(--color-abyss-700)'} stroke={step === i ? color : 'var(--color-line-strong)'} />
+                <text x={16} y={yLine + 3.5} textAnchor="middle" fontSize={10} className="mono" fill={step === i ? 'var(--color-abyss-900)' : 'var(--color-ink-400)'}>
                   {i + 1}
                 </text>
 
