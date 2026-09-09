@@ -26,8 +26,10 @@ export interface LessonProgress {
   completedAt?: number;
   /** Content blocks the learner has actually scrolled through. */
   blocksSeen: string[];
-  /** Inline quiz outcomes, keyed by block id. */
-  quiz: Record<string, { correct: boolean; answeredAt: number; attempts: number }>;
+  /** Inline quiz outcomes, keyed by block id. `selected` is the last pick, so
+   *  a reloaded lesson can show the wrong option in red and the right one in
+   *  green — not just reveal the correct answer with no memory of what you chose. */
+  quiz: Record<string, { correct: boolean; answeredAt: number; attempts: number; selected?: string[] }>;
   exercises: Record<ExerciseId, ExerciseResult>;
   /** Total time spent, milliseconds. */
   timeSpentMs: number;

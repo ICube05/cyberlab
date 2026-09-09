@@ -56,7 +56,10 @@ export function registerContentRoutes(app: FastifyInstance, services: Services):
               state: entry.state,
               blocksSeen: userProgress.blocksSeen,
               quiz: Object.fromEntries(
-                Object.entries(userProgress.quiz).map(([k, v]) => [k, { correct: v.correct, attempts: v.attempts }]),
+                Object.entries(userProgress.quiz).map(([k, v]) => [
+                  k,
+                  { correct: v.correct, attempts: v.attempts, ...(v.selected ? { selected: v.selected } : {}) },
+                ]),
               ),
               exercises: Object.fromEntries(
                 Object.entries(userProgress.exercises).map(([k, v]) => [
@@ -91,7 +94,7 @@ export function registerContentRoutes(app: FastifyInstance, services: Services):
     const correct =
       body.selected.length === block.correct.length &&
       body.selected.every((s) => block.correct.includes(s));
-    progress.recordQuiz(userId, body.lessonId, body.blockId, correct);
+    progress.recordQuiz(userId, body.lessonId, body.blockId, correct, body.selected);
     return reply.send({ correct, correctAnswers: block.correct, explanation: block.explanation });
   });
 }

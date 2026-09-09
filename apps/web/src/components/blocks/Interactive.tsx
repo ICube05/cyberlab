@@ -138,9 +138,11 @@ export function Quiz({ block, lessonId }: { block: QuizBlock; lessonId: string }
     setSubmitted(res.correct);
   };
 
-  // When restoring a previously-correct answer we no longer know the exact pick,
-  // so show the correct options as the ones chosen; otherwise use the live pick.
-  const shownSelected = submitted === null && persistedCorrect === true ? block.correct : selected;
+  // When restoring an already-answered quiz, show the exact options the learner
+  // picked (persisted on the server): a wrong pick reads red and the correct one
+  // green, the same as right after submitting — not a lone green tick on the
+  // right answer, which looked like "you got it right" next to "Non proprio".
+  const shownSelected = submitted === null && persistedCorrect !== null ? saved?.selected ?? [] : selected;
 
   return (
     <div className="my-4 rounded-xl border border-[var(--color-line)] bg-[var(--color-abyss-800)] p-4">
