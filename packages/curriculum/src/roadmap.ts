@@ -106,7 +106,6 @@ export const PLANNED_LESSONS: Lesson[] = [
   // Foundations
 
   // Web
-  planned('mod.web-advanced', { id: 'web.business-logic', title: 'Business Logic Flaws', skills: ['business-logic'], difficulty: 'advanced', outline: ['Abusi che non violano nessuna regola verificata', 'Race condition', 'Manipolazione di flussi multi-step'] }),
 
   // Recon
   planned('mod.recon-passive', { id: 'recon.passive', title: 'Ricognizione passiva', skills: ['passive-recon'], outline: ['OSINT e footprinting', 'Certificati, DNS storici', 'Fonti pubbliche'] }),
