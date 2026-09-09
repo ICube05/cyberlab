@@ -122,6 +122,12 @@ export interface HealthResponse {
   aiProvider: string;
   aiReachable: boolean;
   aiModel: string;
+  /** Human-readable probe result, e.g. why the provider is not answering. */
+  aiDetail: string;
+  /** What AI_PROVIDER asked for, before any fallback. */
+  aiRequested: string;
+  /** Boot-time misconfigurations, surfaced in the UI instead of only the console. */
+  diagnostics: string[];
   contentLocale: 'it' | 'en';
   curriculum: { lessons: number; ready: number; labs: number; exercises: number };
 }

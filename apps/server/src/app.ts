@@ -61,6 +61,9 @@ export async function buildApp(services: Services): Promise<FastifyInstance> {
       aiProvider: services.tutor.providerName,
       aiReachable: probe.reachable,
       aiModel: services.tutor.model,
+      aiDetail: probe.detail,
+      aiRequested: services.config.ai.requestedProvider,
+      diagnostics: services.config.diagnostics,
       contentLocale: services.config.contentLocale,
       curriculum: {
         lessons: report.stats.lessons,

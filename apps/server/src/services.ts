@@ -95,6 +95,15 @@ export async function buildServices(config: Config): Promise<Services> {
   });
   const aiProbe = await tutor.probe();
   console.log(`[ai] provider=${tutor.providerName} model=${tutor.model} → ${aiProbe.detail}`);
+  // A configured-but-unreachable provider is the single most confusing state
+  // this app can boot into, so it gets a loud, actionable line rather than a
+  // silent downgrade to the offline tutor.
+  if (config.ai.provider !== 'offline' && !aiProbe.reachable) {
+    console.warn(
+      `[ai] ⚠ ${config.ai.provider} was requested but is not answering (${aiProbe.detail}). ` +
+        'The tutor will answer from the authored pedagogy until it is reachable.',
+    );
+  }
 
   // Idle lab reaper.
   const reaper = setInterval(() => {
