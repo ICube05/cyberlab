@@ -58,22 +58,55 @@ function MissionCard({
     fix: 'var(--color-flux)',
     checkpoint: 'var(--color-violet)',
   };
+  // A mission you already cleared has to look cleared, or the list gives you no
+  // way to tell what is left to do. It stays replayable — practice is the point
+  // — but the affordance says "rifai", not "inizia".
+  const done = Boolean(state?.passed);
   return (
-    <button onClick={onStart} className="panel group flex w-full items-center gap-3 p-3 text-left transition-colors hover:border-[var(--color-line-strong)]">
-      <span className="mono grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-[var(--color-abyss-600)] text-[12px] text-[var(--color-ink-400)]">{index + 1}</span>
+    <button
+      onClick={onStart}
+      title={done ? 'Missione completata — puoi rifarla per esercizio' : undefined}
+      className={`panel group flex w-full items-center gap-3 p-3 text-left transition-colors ${
+        done
+          ? 'border-[var(--color-flux-dim)] bg-[color-mix(in_oklab,var(--color-flux)_6%,transparent)] hover:border-[var(--color-flux)]'
+          : 'hover:border-[var(--color-line-strong)]'
+      }`}
+    >
+      <span
+        className={`mono grid h-7 w-7 shrink-0 place-items-center rounded-lg text-[12px] ${
+          done
+            ? 'bg-[color-mix(in_oklab,var(--color-flux)_18%,transparent)] text-[var(--color-flux)]'
+            : 'bg-[var(--color-abyss-600)] text-[var(--color-ink-400)]'
+        }`}
+      >
+        {done ? <Icon.check size={14} /> : index + 1}
+      </span>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <span className="truncate text-[13px] font-medium text-[var(--color-ink-100)]">{exercise.title}</span>
-          {state?.passed && <Icon.checkCircle size={14} className="text-[var(--color-flux)]" />}
+          {done && (
+            <span className="chip shrink-0 !border-[var(--color-flux-dim)] !py-0 !text-[9.5px] !text-[var(--color-flux)]">completata</span>
+          )}
         </div>
         <div className="mt-0.5 flex items-center gap-2 text-[11px] text-[var(--color-ink-500)]">
           <span style={{ color: kindColor[exercise.kind] }}>{exercise.kind}</span>
           <span>·</span>
           <span>{exercise.xp} XP</span>
-          {state && state.attempts > 0 && <><span>·</span><span>best {state.bestScore}%</span></>}
+          {state && state.attempts > 0 && (
+            <>
+              <span>·</span>
+              <span>best {state.bestScore}%</span>
+              <span>·</span>
+              <span>{state.attempts} {state.attempts === 1 ? 'tentativo' : 'tentativi'}</span>
+            </>
+          )}
         </div>
       </div>
-      <Icon.play size={14} className="shrink-0 text-[var(--color-ink-500)] transition-colors group-hover:text-[var(--color-signal)]" />
+      {done ? (
+        <Icon.refresh size={14} className="shrink-0 text-[var(--color-ink-500)] transition-colors group-hover:text-[var(--color-flux)]" />
+      ) : (
+        <Icon.play size={14} className="shrink-0 text-[var(--color-ink-500)] transition-colors group-hover:text-[var(--color-signal)]" />
+      )}
     </button>
   );
 }

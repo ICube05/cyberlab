@@ -14,12 +14,9 @@ import type { Difficulty } from '@cyberlab/core';
 function TheoryCompletion({ lesson }: { lesson: NonNullable<ReturnType<typeof useStore.getState>['lesson']> }) {
   const seen = useStore((s) => s.seenBlocks);
   const l = lesson.lesson;
-  // `lesson.progress` is only filled by `openLesson`, so it goes stale the moment
-  // you answer anything; the live progress is refetched after every answer. Read
-  // that, and fall back to the lesson payload before the first fetch lands.
-  const live = useStore((s) => s.progress?.progress.lessons[l.id]);
-  const quizState = live?.quiz ?? lesson.progress?.quiz;
-  const state = live?.state ?? lesson.progress?.state;
+  // `refreshProgress` keeps `lesson.progress` current, so this is the one source.
+  const quizState = lesson.progress?.quiz;
+  const state = lesson.progress?.state;
 
   const blocks = [...l.theory, ...(l.practice ?? [])];
   const quizzes = blocks.filter((b) => b.kind === 'quiz');
