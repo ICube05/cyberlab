@@ -681,10 +681,47 @@ function stripNotes(source: string): string {
   return JSON.stringify(parsed);
 }
 
+/**
+ * The page shell.
+ *
+ * The markup already spoke in `topbar`, `card`, `list`, `tag` — but no
+ * stylesheet was ever shipped with it, so this target rendered as raw HTML
+ * while the other web lab looked like an application. That difference reads as
+ * "the lab is broken", which is the wrong thing to be wondering about while you
+ * are trying to land a payload. Same house style as the vault target.
+ *
+ * Nothing here touches the vulnerabilities: escaping is decided by
+ * `renderUserContent`, and a payload lands in the DOM exactly as before.
+ */
+const STYLE = `<style>
+:root{color-scheme:dark;--bg:#0d1117;--panel:#161b22;--line:#26303d;--text:#d7dee8;--muted:#7d8899;--accent:#4a9eff;--danger:#f4666a;--ok:#3fb950}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.6 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+.topbar{display:flex;gap:16px;align-items:center;padding:12px 20px;background:var(--panel);border-bottom:1px solid var(--line)}
+.topbar a{margin-left:auto;color:var(--accent)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:22px;margin:24px auto;max-width:680px}
+h1{font-size:20px;margin:0 0 12px}
+h2{font-size:16px;margin:20px 0 8px}
+a{color:var(--accent)}
+.muted{color:var(--muted)}
+.error{color:var(--danger)}
+form{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:12px 0}
+input,textarea{padding:9px 11px;background:#0d1117;border:1px solid var(--line);border-radius:6px;color:var(--text);font:inherit}
+input{min-width:220px}
+textarea{width:100%;min-height:90px}
+button{padding:9px 18px;background:var(--accent);border:0;border-radius:6px;color:#04121f;font:inherit;font-weight:600;cursor:pointer}
+code,pre{font-family:ui-monospace,"SFMono-Regular",Menlo,monospace}
+pre{white-space:pre-wrap;background:#0d1117;border:1px solid var(--line);border-radius:6px;padding:12px}
+.list{list-style:none;padding:0;margin:0}
+.list li{padding:10px 0;border-bottom:1px solid var(--line)}
+.list li:last-child{border-bottom:0}
+.tag{display:inline-block;padding:1px 8px;border:1px solid var(--line);border-radius:999px;font-size:11px;color:var(--muted)}
+</style>`;
+
 function page(title: string, body: string): string {
   return `<!doctype html>
 <html lang="it">
-<head><meta charset="utf-8"><title>${escapeHtml(title)} · Helpdesk</title></head>
+<head><meta charset="utf-8"><title>${escapeHtml(title)} · Helpdesk</title>${STYLE}</head>
 <body>
 <nav class="topbar"><strong>Helpdesk</strong><a href="/">Ticket</a></nav>
 ${body}
