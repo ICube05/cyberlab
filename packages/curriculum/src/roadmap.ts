@@ -106,7 +106,6 @@ export const PLANNED_LESSONS: Lesson[] = [
   // Foundations
 
   // Web
-  planned('mod.web-advanced', { id: 'web.ssrf', title: 'SSRF', skills: ['ssrf'], difficulty: 'advanced', outline: ['Far fare richieste al server', 'Accesso a servizi interni e metadata cloud', 'Filtri e bypass', 'Mitigazione: allow-list'] }),
   planned('mod.web-advanced', { id: 'web.jwt', title: 'JWT & attacchi', skills: ['jwt'], difficulty: 'advanced', outline: ['Struttura header.payload.signature', 'alg=none e confusione di algoritmo', 'Chiavi deboli', 'Verifica corretta'] }),
   planned('mod.web-advanced', { id: 'web.path-traversal', title: 'Path Traversal', skills: ['path-traversal'], difficulty: 'intermediate', outline: ['../ e canonicalizzazione', 'Lettura di file arbitrari', 'Mitigazione'] }),
   planned('mod.web-advanced', { id: 'web.file-upload', title: 'File Upload insicuro', skills: ['business-logic'], difficulty: 'intermediate', outline: ['Validazione di tipo e contenuto', 'Esecuzione remota via upload', 'Storage sicuro'] }),
