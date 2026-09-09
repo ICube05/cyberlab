@@ -200,7 +200,13 @@ function Collapsible({
   return (
     <div
       className="grid"
-      style={{ gridTemplateRows: open ? '1fr' : '0fr', transition: `grid-template-rows ${duration}ms ease` }}
+      style={{
+        gridTemplateRows: open ? '1fr' : '0fr',
+        // Same curve as the chevron's rotation, so the fold and the arrow move
+        // as one gesture instead of two slightly different ones.
+        transition: `grid-template-rows ${duration}ms cubic-bezier(0.4, 0, 0.2, 1), opacity ${duration}ms ease`,
+        opacity: open ? 1 : 0,
+      }}
     >
       <div className="overflow-hidden">{children}</div>
     </div>

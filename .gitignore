@@ -5,7 +5,12 @@ build/
 *.tsbuildinfo
 .env
 .env.local
-apps/server/data/
+# The progress database IS committed on purpose, so your completed lessons and
+# mastery travel with the repo. Only SQLite's transient sidecars stay out — the
+# server checkpoints the WAL into the .db, so the committed file is complete.
+apps/server/data/*
+!apps/server/data/
+!apps/server/data/cyberlab.db
 coverage/
 .DS_Store
 *.log
