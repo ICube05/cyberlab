@@ -150,7 +150,7 @@ export interface LessonResponse {
   progress?: {
     state: LessonState;
     blocksSeen: string[];
-    quiz: Record<string, { correct: boolean; attempts: number }>;
+    quiz: Record<string, { correct: boolean; attempts: number; selected?: string[] }>;
     exercises: Record<string, { passed: boolean; bestScore: number; attempts: number }>;
   };
 }

@@ -112,7 +112,7 @@ export class ProgressService {
     return progress;
   }
 
-  recordQuiz(userId: string, lessonId: string, blockId: string, correct: boolean): UserProgress {
+  recordQuiz(userId: string, lessonId: string, blockId: string, correct: boolean, selected: string[] = []): UserProgress {
     const progress = this.store.getProgress(userId);
     const lesson = ensureLessonProgress(progress, lessonId);
     const prior = lesson.quiz[blockId];
@@ -120,6 +120,7 @@ export class ProgressService {
       correct: correct || (prior?.correct ?? false),
       answeredAt: Date.now(),
       attempts: (prior?.attempts ?? 0) + 1,
+      selected,
     };
     if (correct && !prior?.correct) {
       awardXp(progress, prior ? XP_AWARDS.quizCorrectRetry : XP_AWARDS.quizCorrect);
