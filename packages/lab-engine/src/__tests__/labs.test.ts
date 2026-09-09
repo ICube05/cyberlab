@@ -129,3 +129,106 @@ describe('SQL sandbox', () => {
     db.close();
   });
 });
+
+/**
+ * The editor contract.
+ *
+ * The web editor used to decide what was saveable from POSIX mode bits, which
+ * disagreed with what the targets actually accept. These pin the agreement:
+ * a listing says which paths are writable, and a write to anything else is
+ * refused with a message a learner can act on.
+ */
+describe('file write contract', () => {
+  const newManager = () => new LabManager({ runtime: new InProcessRuntime(), specs: SPECS });
+
+  it('vault exposes exactly one writable file, and refuses the others by name', async () => {
+    const manager = newManager();
+    const { instanceId } = await manager.create('u-write', 'lab.vault');
+
+    const listing = await manager.dispatch('u-write', instanceId, {
+      type: 'lab.inspect',
+      what: 'files',
+    });
+    if (listing.result.type !== 'inspect' || listing.result.view.kind !== 'files') {
+      throw new Error('expected a files view');
+    }
+    const files = listing.result.view.root.filter((e) => e.type === 'file');
+    const writable = files.filter((e) => e.writable).map((e) => e.path);
+    expect(writable).toEqual(['/srv/vault/policy.json']);
+    // Every read-only file explains itself, so the UI never has to guess.
+    for (const entry of files.filter((e) => !e.writable)) {
+      expect(entry.readOnlyReason).toBeTruthy();
+    }
+
+    // A refused action is reported as an error *result*, not a thrown error:
+    // the lab always answers, and the answer carries the reason.
+    const refused = await manager.dispatch('u-write', instanceId, {
+      type: 'editor.write',
+      path: '/srv/vault/profile.php',
+      content: '<?php // nope',
+    });
+    expect(refused.result.ok).toBe(false);
+    expect(refused.result.type === 'error' && refused.result.message).toMatch(/read-only/i);
+  });
+
+  it('a saved policy actually changes how the target behaves', async () => {
+    const manager = newManager();
+    const { instanceId } = await manager.create('u-policy', 'lab.vault');
+    const read = await manager.dispatch('u-policy', instanceId, {
+      type: 'fs.read',
+      path: '/srv/vault/policy.json',
+    });
+    if (read.result.type !== 'fs.content') throw new Error('expected file content');
+
+    const patched = read.result.content.replace(/"ownership"\s*:\s*"[^"]*"/, '"ownership": "enforced"');
+    const write = await manager.dispatch('u-policy', instanceId, {
+      type: 'editor.write',
+      path: '/srv/vault/policy.json',
+      content: patched,
+    });
+    expect(write.result.ok).toBe(true);
+    expect(write.state.signals.some((s) => s.name === 'policy.updated')).toBe(true);
+
+    const reread = await manager.dispatch('u-policy', instanceId, {
+      type: 'fs.read',
+      path: '/srv/vault/policy.json',
+    });
+    if (reread.result.type !== 'fs.content') throw new Error('expected file content');
+    expect(reread.result.content).toContain('"ownership": "enforced"');
+  });
+
+  it('invalid JSON is refused with a reason, and nothing is persisted', async () => {
+    const manager = newManager();
+    const { instanceId } = await manager.create('u-bad', 'lab.vault');
+    const refused = await manager.dispatch('u-bad', instanceId, {
+      type: 'editor.write',
+      path: '/srv/vault/policy.json',
+      content: '{ not json',
+    });
+    expect(refused.result.type === 'error' && refused.result.message).toMatch(/not valid JSON/i);
+
+    const after = await manager.dispatch('u-bad', instanceId, {
+      type: 'fs.read',
+      path: '/srv/vault/policy.json',
+    });
+    if (after.result.type !== 'fs.content') throw new Error('expected file content');
+    expect(() => JSON.parse(after.result.content)).not.toThrow();
+  });
+
+  it('the Linux lab honours real permissions in the editor', async () => {
+    const manager = newManager();
+    const { instanceId } = await manager.create('u-linux', 'lab.foothold');
+    const listing = await manager.dispatch('u-linux', instanceId, {
+      type: 'lab.inspect',
+      what: 'files',
+    });
+    if (listing.result.type !== 'inspect' || listing.result.view.kind !== 'files') {
+      throw new Error('expected a files view');
+    }
+    // As `seba`, root-owned 0600 files must not be offered as editable.
+    const rootOnly = listing.result.view.root.filter(
+      (e) => e.type === 'file' && e.owner === 'root' && (e.mode & 0o006) === 0,
+    );
+    for (const entry of rootOnly) expect(entry.writable).toBe(false);
+  });
+});

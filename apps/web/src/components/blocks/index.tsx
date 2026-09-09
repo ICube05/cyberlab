@@ -4,6 +4,8 @@ import { renderInline } from './inline.js';
 import { FlowDiagram, SequenceDiagram } from './Diagram.js';
 import { HttpExchange, PermissionBits, Quiz, SqlBuilder } from './Interactive.js';
 import { Icon } from '../../icons.js';
+import { DARCULA, normaliseLanguage } from '../../syntax.js';
+import { highlight } from '../lab/CodeEditor.js';
 import { useStore } from '../../store.js';
 
 /**
@@ -110,7 +112,7 @@ function BlockBody({ block, lessonId }: { block: ContentBlock; lessonId: string 
                 {side.tone === 'bad' ? <Icon.x size={13} /> : side.tone === 'good' ? <Icon.check size={13} /> : <Icon.dot size={10} />}
                 {side.label}
               </div>
-              <pre className="mono overflow-x-auto bg-[var(--color-abyss-900)] p-3 text-[12px] leading-relaxed text-[var(--color-ink-200)]">{highlightCode(side.code, side.language)}</pre>
+              <pre className="mono overflow-x-auto p-3 text-[12px] leading-relaxed" style={{ background: DARCULA.bg, color: DARCULA.fg }}>{highlightCode(side.code, side.language)}</pre>
               {side.note && <div className="border-t border-[var(--color-line)] bg-[var(--color-abyss-800)] px-3 py-2 text-[11.5px] text-[var(--color-ink-400)]">{side.note}</div>}
             </div>
           ))}
@@ -213,7 +215,7 @@ function CodeBlockView({ block }: { block: Extract<ContentBlock, { kind: 'code' 
           <span className="chip !py-0 !text-[10px]">{block.language}</span>
         </div>
       )}
-      <pre className="mono overflow-x-auto bg-[var(--color-abyss-900)] p-3 text-[12.5px] leading-relaxed text-[var(--color-ink-200)]">
+      <pre className="mono overflow-x-auto p-3 text-[12.5px] leading-relaxed" style={{ background: DARCULA.bg, color: DARCULA.fg }}>
         {block.code.split('\n').map((line, i) => {
           const n = i + 1;
           const hi = block.highlight?.includes(n);
@@ -230,33 +232,13 @@ function CodeBlockView({ block }: { block: Extract<ContentBlock, { kind: 'code' 
   );
 }
 
-/** Extremely small token colouriser — enough to make code readable, not a lexer. */
+/**
+ * Colourise a fragment of code with the shared IntelliJ Darcula lexer.
+ *
+ * Kept as a named export because several blocks paint code inline (comparisons,
+ * code blocks, the request panel); they all go through the same tokeniser as
+ * the lab's editor, so a string is green in exactly the same places everywhere.
+ */
 export function highlightCode(code: string, language: string): React.ReactNode {
-  const keywords =
-    language === 'sql'
-      ? /\b(SELECT|FROM|WHERE|AND|OR|UNION|LIKE|INSERT|INTO|VALUES|UPDATE|SET|DELETE|JOIN|NULL|LIMIT|ORDER BY)\b/gi
-      : language === 'php'
-        ? /\b(function|return|if|else|require|require_once|echo|new|exit|header|true|false|null)\b/g
-        : language === 'http'
-          ? /^(GET|POST|PUT|DELETE|PATCH|HEAD)\b/g
-          : /\b(const|let|var|function|return|if|else|for|while|new|await|async|import|from|export|true|false|null|undefined)\b/g;
-
-  const parts = code.split(keywords);
-  const matches = code.match(keywords) ?? [];
-  const out: React.ReactNode[] = [];
-  parts.forEach((part, i) => {
-    out.push(<span key={`p${i}`}>{colorStringsAndComments(part)}</span>);
-    if (i < matches.length) out.push(<span key={`k${i}`} className="text-[var(--color-signal)]">{matches[i]}</span>);
-  });
-  return <>{out}</>;
-}
-
-function colorStringsAndComments(text: string): React.ReactNode {
-  const re = /('[^']*'|"[^"]*"|\/\/[^\n]*|#[^\n]*|--[^\n]*)/g;
-  const parts = text.split(re);
-  return parts.map((part, i) => {
-    if (/^('|")/.test(part)) return <span key={i} className="text-[var(--color-flux)]">{part}</span>;
-    if (/^(\/\/|#|--)/.test(part)) return <span key={i} className="text-[var(--color-ink-500)] italic">{part}</span>;
-    return <span key={i}>{part}</span>;
-  });
+  return highlight(code, normaliseLanguage(language));
 }

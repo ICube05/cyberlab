@@ -130,17 +130,32 @@ class InjectionTarget implements LabTarget {
    */
   files = {
     list: (path: string): FsEntry[] => {
-      const entry: FsEntry = {
-        name: 'config.json',
-        path: '/etc/catalog/config.json',
-        type: 'file',
-        mode: 0o664,
-        owner: 'catalog',
-        group: 'catalog',
-        size: this.#configSource().length,
-        mtime: 1_700_000_000_000,
-      };
-      return path.startsWith('/etc/catalog') || path === '/' ? [entry] : [];
+      const entries: FsEntry[] = [
+        {
+          name: 'config.json',
+          path: '/etc/catalog/config.json',
+          type: 'file',
+          mode: 0o664,
+          owner: 'catalog',
+          group: 'catalog',
+          size: this.#configSource().length,
+          mtime: 1_700_000_000_000,
+          writable: true,
+        },
+        {
+          name: 'search.php',
+          path: '/srv/catalog/search.php',
+          type: 'file',
+          mode: 0o644,
+          owner: 'catalog',
+          group: 'catalog',
+          size: SEARCH_SOURCE.length,
+          mtime: 1_700_000_000_000,
+          writable: false,
+          readOnlyReason: 'Sorgente di riferimento: qui vedi la concatenazione. Il fix si applica da config.json.',
+        },
+      ];
+      return path.startsWith('/etc/catalog') || path.startsWith('/srv/catalog') || path === '/' ? entries : [];
     },
     read: (path: string): string => {
       if (path === '/etc/catalog/config.json') return this.#configSource();

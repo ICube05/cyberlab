@@ -376,6 +376,12 @@ class VaultTarget implements LabTarget {
         group: 'www-data',
         size: content.length,
         mtime: 1_700_000_000_000,
+        // The editor asks the target, not the mode bits: profile.php is
+        // readable so you can study the bug, but the fix belongs in the policy.
+        writable: path.endsWith('policy.json'),
+        ...(path.endsWith('policy.json')
+          ? {}
+          : { readOnlyReason: 'Sorgente di riferimento. La correzione va fatta in policy.json.' }),
       })),
     ];
   }

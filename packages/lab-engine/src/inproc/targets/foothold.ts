@@ -20,7 +20,7 @@ interface FootholdState {
 }
 
 class FootholdTarget implements LabTarget {
-  readonly surfaces: readonly LabSurface[] = ['terminal', 'files', 'logs'];
+  readonly surfaces: readonly LabSurface[] = ['terminal', 'files', 'editor', 'logs'];
 
   #vfs: Vfs;
   #env: ShellEnv;
@@ -118,7 +118,10 @@ class FootholdTarget implements LabTarget {
   }
 
   files = {
-    list: (path: string): FsEntry[] => this.#vfs.list(path),
+    list: (path: string): FsEntry[] =>
+      // Editability is answered by the same permission check the shell uses, so
+      // the editor and `echo > file` can never disagree about what is writable.
+      this.#vfs.list(path).map((entry) => this.#decorate(entry)),
     read: (path: string): string => {
       const node = this.#vfs.lookup(path);
       if (!node || node.type === 'dir') throw new Error(`cannot read ${path}`);
@@ -128,7 +131,32 @@ class FootholdTarget implements LabTarget {
       if (!this.#vfs.can(node, user, 'r')) throw new Error(`${path}: Permission denied`);
       return node.content ?? '';
     },
+    write: (path: string, content: string, ctx: TargetContext): void => {
+      const node = this.#vfs.lookup(path, false);
+      if (!node || node.type === 'dir') throw new Error(`${path}: No such file`);
+      const user = this.#env.users[this.#env.currentUser]!;
+      if (!this.#vfs.can(node, user, 'w')) throw new Error(`${path}: Permission denied`);
+      node.content = content;
+      node.mtime = Date.now();
+      ctx.signal('file.written', { path, user: user.name, bytes: content.length });
+      ctx.log('info', 'kernel', `${user.name} wrote ${content.length} bytes to ${path}`);
+    },
   };
+
+  /** Annotate a listing with what the current shell user may actually do. */
+  #decorate(entry: FsEntry): FsEntry {
+    if (entry.type === 'dir') return entry;
+    const node = this.#vfs.lookup(entry.path, false);
+    const user = this.#env.users[this.#env.currentUser]!;
+    const writable = Boolean(node && this.#vfs.can(node, user, 'w'));
+    return {
+      ...entry,
+      writable,
+      ...(writable
+        ? {}
+        : { readOnlyReason: `Permesso negato: ${user.name} non ha il bit di scrittura su questo file.` }),
+    };
+  }
 
   inspect(what: 'database' | 'sessions' | 'logs' | 'files'): LabInspectView {
     if (what === 'files') return { kind: 'files', root: this.#vfs.list('/') };

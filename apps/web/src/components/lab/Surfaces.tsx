@@ -3,7 +3,8 @@ import type { FsEntry, LabInspectView, SqlResultView } from '@cyberlab/core';
 import { useStore } from '../../store.js';
 import { api } from '../../api.js';
 import { Icon } from '../../icons.js';
-import { highlightCode } from '../blocks/index.js';
+import { languageForPath } from '../../syntax.js';
+import { CodeEditor, CodeViewer } from './CodeEditor.js';
 
 /** Direct SQL console over the lab database. Real queries, real errors. */
 export function SqlConsole() {
@@ -146,15 +147,27 @@ function rewriteLinks(html: string): string {
   );
 }
 
-/** File explorer + read-only viewer / editor (used by the fix flow). */
+/**
+ * File explorer + editor.
+ *
+ * Two things were wrong here and both were about honesty. The panel decided
+ * whether a file could be saved from its POSIX mode bits, so Save appeared on
+ * files the target would always refuse — you typed, pressed Save, and nothing
+ * happened. And when the write *was* refused, the reason went into a toast that
+ * faded before you could read it. Now the target declares `writable` per entry
+ * and the refusal is rendered in the editor, under the code, until you fix it.
+ */
 export function FileExplorer({ editable }: { editable?: boolean }) {
   const lab = useStore((s) => s.lab);
   const runAction = useStore((s) => s.runAction);
+  const pushToast = useStore((s) => s.pushToast);
   const [entries, setEntries] = useState<FsEntry[]>([]);
-  const [current, setCurrent] = useState<string | null>(null);
+  const [current, setCurrent] = useState<FsEntry | null>(null);
   const [content, setContent] = useState('');
-  const [dirty, setDirty] = useState(false);
+  const [original, setOriginal] = useState('');
+  const [problem, setProblem] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const load = async () => {
     if (!lab) return;
@@ -170,72 +183,125 @@ export function FileExplorer({ editable }: { editable?: boolean }) {
     if (entry.type === 'dir') return;
     const res = await runAction({ type: 'fs.read', path: entry.path });
     if (res?.result.type === 'fs.content') {
-      setCurrent(entry.path);
+      setCurrent(entry);
       setContent(res.result.content);
-      setDirty(false);
+      setOriginal(res.result.content);
+      setProblem(null);
       setSaved(false);
     }
   };
 
   const save = async () => {
-    if (!current) return;
-    const res = await runAction({ type: 'editor.write', path: current, content });
-    if (res && res.result.type !== 'error') {
-      setDirty(false);
+    if (!current || saving) return;
+    setSaving(true);
+    setProblem(null);
+    try {
+      const res = await api.labAction(lab!.instanceId, { type: 'editor.write', path: current.path, content });
+      useStore.setState({ lab: res.state, lastAction: res });
+
+      // A refused action is *not* a transport failure: the lab answers 200 with
+      // an error result. Missing that distinction is what made Save look like
+      // it did nothing — the request succeeded, the write did not.
+      if (res.result.type === 'error') {
+        setProblem(res.result.message);
+        return;
+      }
+
+      setOriginal(content);
       setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
-      void load();
+      setTimeout(() => setSaved(false), 2200);
+      pushToast({ kind: 'success', title: 'File salvato', detail: current.path });
+      await load();
+    } catch (error) {
+      // The target refuses writes for real reasons — invalid JSON, a read-only
+      // path, a permission bit. Those are part of the lesson, so they stay on
+      // screen instead of flashing past in a toast.
+      setProblem(messageOf(error));
+    } finally {
+      setSaving(false);
     }
   };
 
   const files = entries.filter((e) => e.type === 'file');
-  const writable = current && files.find((f) => f.path === current && (f.mode & 0o200) !== 0);
+  const dirty = content !== original;
+  const canWrite = Boolean(editable && current?.writable);
+  const language = current ? languageForPath(current.path) : 'text';
 
   return (
     <div className="flex h-full">
-      <div className="w-52 shrink-0 overflow-y-auto border-r border-[var(--color-line)] p-1.5">
+      <div className="w-56 shrink-0 overflow-y-auto border-r border-[var(--color-line)] p-1.5">
         <div className="px-2 py-1 text-[10.5px] uppercase tracking-wider text-[var(--color-ink-500)]">Files</div>
+        {files.length === 0 && <div className="px-2 py-1 text-[11.5px] text-[var(--color-ink-500)]">Nessun file esposto.</div>}
         {files.map((entry) => (
           <button
             key={entry.path}
             onClick={() => open(entry)}
-            className={`flex w-full items-center gap-1.5 rounded px-2 py-1 text-left text-[11.5px] ${current === entry.path ? 'bg-[var(--color-abyss-600)] text-[var(--color-ink-100)]' : 'text-[var(--color-ink-300)] hover:bg-[var(--color-abyss-700)]'}`}
-            title={entry.path}
+            className={`flex w-full items-center gap-1.5 rounded px-2 py-1 text-left text-[11.5px] ${current?.path === entry.path ? 'bg-[var(--color-abyss-600)] text-[var(--color-ink-100)]' : 'text-[var(--color-ink-300)] hover:bg-[var(--color-abyss-700)]'}`}
+            title={`${entry.path}${entry.writable ? '' : ' — ' + (entry.readOnlyReason ?? 'read-only')}`}
           >
-            <span className={`h-1.5 w-1.5 rounded-full ${(entry.mode & 0o200) !== 0 ? 'bg-[var(--color-flux)]' : 'bg-[var(--color-ink-500)]'}`} />
+            <span
+              className={`h-1.5 w-1.5 shrink-0 rounded-full ${entry.writable ? 'bg-[var(--color-flux)]' : 'bg-[var(--color-ink-500)]'}`}
+              title={entry.writable ? 'scrivibile' : 'sola lettura'}
+            />
             <span className="mono truncate">{entry.name}</span>
+            {dirty && current?.path === entry.path && <span className="ml-auto text-[var(--color-amber)]">●</span>}
           </button>
         ))}
       </div>
+
       <div className="flex min-w-0 flex-1 flex-col">
         {!current ? (
           <div className="grid flex-1 place-items-center text-[12.5px] text-[var(--color-ink-500)]">Seleziona un file.</div>
         ) : (
           <>
-            <div className="flex items-center gap-2 border-b border-[var(--color-line)] px-3 py-1.5">
-              <span className="mono flex-1 truncate text-[11.5px] text-[var(--color-ink-300)]">{current}</span>
-              {editable && writable && (
-                <button className="btn btn-primary !py-1 text-[11px]" onClick={save} disabled={!dirty}>
-                  {saved ? <><Icon.check size={12} /> Salvato</> : 'Salva'}
+            <div className="flex items-center gap-2 border-b border-[var(--color-line)] bg-[var(--color-abyss-800)] px-3 py-1.5">
+              <span className="mono truncate text-[11.5px] text-[var(--color-ink-300)]">{current.path}</span>
+              {dirty && <span className="chip !border-[var(--color-amber)] !py-0 !text-[9.5px] !text-[var(--color-amber)]">modificato</span>}
+              <span className="mono ml-auto text-[10.5px] text-[var(--color-ink-500)]">{language}</span>
+              {canWrite ? (
+                <button className="btn btn-primary !py-1 text-[11px]" onClick={save} disabled={!dirty || saving}>
+                  {saved ? (
+                    <><Icon.check size={12} /> Salvato</>
+                  ) : saving ? (
+                    'Salvataggio…'
+                  ) : (
+                    <>Salva <kbd className="!border-0 !bg-transparent !px-0 !text-[10px] opacity-60">⌘S</kbd></>
+                  )}
                 </button>
+              ) : (
+                <span className="chip !py-0 !text-[10px]" title={current.readOnlyReason ?? 'Questo file non è modificabile in questo lab.'}>
+                  read-only
+                </span>
               )}
-              {!writable && <span className="chip !text-[10px]">read-only</span>}
             </div>
-            {editable && writable ? (
-              <textarea
+
+            {!canWrite && current.readOnlyReason && (
+              <div className="border-b border-[var(--color-line)] bg-[var(--color-abyss-800)] px-3 py-1.5 text-[11px] text-[var(--color-ink-500)]">
+                {current.readOnlyReason}
+              </div>
+            )}
+
+            {canWrite ? (
+              <CodeEditor
                 value={content}
-                onChange={(e) => { setContent(e.target.value); setDirty(true); }}
-                spellCheck={false}
-                className="mono min-h-0 flex-1 resize-none !rounded-none !border-0 bg-[var(--color-abyss-900)] p-3 text-[12px] leading-relaxed focus:!ring-0 focus:!shadow-none"
+                language={language}
+                onChange={(v) => { setContent(v); setProblem(null); }}
+                onSave={save}
+                problem={problem}
               />
             ) : (
-              <pre className="mono min-h-0 flex-1 overflow-auto p-3 text-[12px] leading-relaxed text-[var(--color-ink-200)]">{highlightCode(content, current.endsWith('.json') ? 'json' : current.endsWith('.php') ? 'php' : 'text')}</pre>
+              <CodeViewer value={content} language={language} />
             )}
           </>
         )}
       </div>
     </div>
   );
+}
+
+function messageOf(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  return String(error);
 }
 
 /** Read-only "what the server sees" database inspector. */

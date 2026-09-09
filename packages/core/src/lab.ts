@@ -170,6 +170,17 @@ export interface FsEntry {
   size: number;
   mtime: number;
   target?: string;
+  /**
+   * Whether the *target* will accept a write to this path.
+   *
+   * The POSIX mode bits are not the answer: a lab can expose a file as 0644
+   * and still refuse to persist it, because only some files are part of the
+   * exercise. Deciding editability from `mode` in the UI is what made Save
+   * appear on files that could never be saved. The target answers instead.
+   */
+  writable?: boolean;
+  /** Why it is read-only, shown in the editor. */
+  readOnlyReason?: string;
 }
 
 export type LabInspectView =
