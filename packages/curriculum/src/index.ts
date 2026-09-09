@@ -29,6 +29,7 @@ import { linuxPermissionsLesson } from './lessons/foundations/linux-permissions.
 import { httpCookiesLesson } from './lessons/web/http-cookies.js';
 import { commandInjectionLesson } from './lessons/web/command-injection.js';
 import { xssLesson } from './lessons/web/xss.js';
+import { csrfLesson } from './lessons/web/csrf.js';
 import { brokenAccessControlLesson } from './lessons/broken-access-control.js';
 import { sqlInjectionLesson } from './lessons/sql-injection.js';
 import { linuxPrivescLesson } from './lessons/linux-privesc.js';
@@ -76,6 +77,7 @@ const THEORY_LESSONS: Lesson[] = [
   httpCookiesLesson,
   commandInjectionLesson,
   xssLesson,
+  csrfLesson,
 ];
 
 export const LESSONS: Lesson[] = [...READY_LESSONS, ...THEORY_LESSONS, ...PLANNED_LESSONS];
