@@ -94,3 +94,7 @@ CyberLab teaches offensive techniques **exclusively for authorized contexts**: i
 | State | Zustand | one store, no boilerplate |
 
 Monorepo (pnpm workspaces): `packages/core` (pure domain), `packages/lab-engine`, `packages/ai`, `packages/curriculum`, `apps/server`, `apps/web`.
+
+## Stato del lavoro
+
+`docs/HANDOFF.md` descrive cosa è fatto, perché, e cosa resta — scritto per chi riprende il lavoro senza il contesto della sessione precedente.
