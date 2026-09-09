@@ -8,6 +8,7 @@ import {
   tpl,
   type TargetHttpRequest,
   type TargetHttpResponse,
+  formBodyProblem,
 } from '../http.js';
 import { Vfs, type User } from '../vfs.js';
 import type { LabTarget, TargetBuilder, TargetContext } from '../target.js';
@@ -444,9 +445,25 @@ function buildRouter(target: HelpdeskTarget): Router<TargetContext> {
   });
 
   router.post('/commento', (req, ctx) => {
+    // Say when the body was not readable as a form, instead of reporting a
+    // missing ticket: the ticket is usually there, the encoding is not.
+    const problem = formBodyProblem(req);
+    if (problem) {
+      return html(
+        page('Commento', tpl`<div class="card"><p class="error">Commento non salvato.</p><p>${problem}</p></div>`),
+        { status: 400, serverNotes: [problem] },
+      );
+    }
+
     const id = Number(req.form['id']);
     const ticket = state().tickets.find((t) => t.id === id);
-    if (!ticket) return html(page('Errore', tpl`<div class="card"><p class="error">Ticket inesistente.</p></div>`), { status: 404 });
+    if (!ticket) {
+      const known = state().tickets.map((t) => `#${t.id}`).join(', ');
+      return html(
+        page('Errore', tpl`<div class="card"><p class="error">Ticket inesistente.</p><p class="muted">Ticket presenti: ${known}</p></div>`),
+        { status: 404, serverNotes: [`Nessun ticket con id "${req.form['id'] ?? ''}". Presenti: ${known}.`] },
+      );
+    }
 
     const author = req.form['autore'] ?? 'anonimo';
     const bodyText = req.form['testo'] ?? '';

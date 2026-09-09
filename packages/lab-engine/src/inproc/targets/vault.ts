@@ -11,6 +11,7 @@ import {
   tpl,
   type TargetHttpRequest,
   type TargetHttpResponse,
+  formBodyProblem,
 } from '../http.js';
 import type { LabTarget, TargetBuilder, TargetContext } from '../target.js';
 
@@ -458,6 +459,14 @@ function buildRouter(target: VaultTarget): Router<TargetContext> {
   });
 
   router.post('/login.php', (req, ctx) => {
+    // An unreadable body is an encoding problem, not a wrong password.
+    const problem = formBodyProblem(req);
+    if (problem) {
+      return html(page('Accesso', `<div class="card narrow"><p class="error">${problem}</p></div>`), {
+        status: 400,
+        serverNotes: [problem],
+      });
+    }
     const username = req.form['username'] ?? '';
     const password = req.form['password'] ?? '';
     // Parameterised on purpose: this lab is about authorisation, not injection.
