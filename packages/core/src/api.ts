@@ -200,6 +200,9 @@ export interface GenerateExerciseResponse {
   exercise: Exercise;
   /** Where the generator got the shape from, for transparency. */
   derivedFrom: string;
+  /** Who wrote the scenario framing: the provider name, or 'authored' when the
+   *  model was unavailable and the template's own briefing was kept. */
+  scenarioBy?: string;
 }
 
 export interface ApiError {

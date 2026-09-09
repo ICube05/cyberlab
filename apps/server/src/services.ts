@@ -4,7 +4,7 @@ import {
   LabManager,
   type LabRuntime,
 } from '@cyberlab/lab-engine';
-import { TutorService, createProvider, type ProviderKind } from '@cyberlab/ai';
+import { TutorService, createProvider, type AiProvider, type ProviderKind } from '@cyberlab/ai';
 import { LABS, assertValidCurriculum } from '@cyberlab/curriculum';
 import type { TutorContext } from '@cyberlab/core';
 import type { Config } from './config.js';
@@ -26,6 +26,8 @@ export interface Services {
   progress: ProgressService;
   labs: LabManager;
   tutor: TutorService;
+  /** The raw AI provider, for features that prompt outside the tutor (challenges). */
+  provider: AiProvider;
   runtimeDetail: string;
   aiProbe: { reachable: boolean; detail: string };
   /** The most recently assembled tutor context, read by the offline provider. */
@@ -119,6 +121,7 @@ export async function buildServices(config: Config): Promise<Services> {
     progress,
     labs,
     tutor,
+    provider,
     runtimeDetail,
     aiProbe,
     tutorContextRef,

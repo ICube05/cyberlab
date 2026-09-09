@@ -65,6 +65,9 @@ interface State {
 
   // attempt
   attempt?: AttemptUi;
+  challengeBusy: boolean;
+  /** Provenance of the challenge in play, shown so it is clear what generated it. */
+  lastChallenge?: { exerciseId: string; derivedFrom: string; scenarioBy: string };
 
   // tutor
   tutorMode: TutorMode;
@@ -94,6 +97,8 @@ interface State {
   resetLab(): Promise<void>;
 
   startAttempt(exercise: Exercise): Promise<void>;
+  /** Generate a fresh challenge on a lesson's real lab and drop straight into it. */
+  generateChallenge(lessonId: string, difficultyShift: number): Promise<void>;
   abandonAttempt(): Promise<void>;
   revealHint(hintId: string): Promise<void>;
   setReportField(field: string, value: string): void;
@@ -168,6 +173,7 @@ export const useStore = create<State>((set, get) => ({
   commandPaletteOpen: false,
   toasts: [],
   seenBlocks: new Set(),
+  challengeBusy: false,
 
   async boot() {
     try {
@@ -297,6 +303,40 @@ export const useStore = create<State>((set, get) => ({
     const res = await api.resetLab(lab.instanceId);
     set({ lab: res.state, lastAction: undefined });
     get().pushToast({ kind: 'info', title: 'Laboratorio resettato' });
+  },
+
+  /**
+   * Build a challenge and start playing it.
+   *
+   * Everything here is the ordinary path: the lesson opens, its real lab boots,
+   * and the attempt runs through the same engine that grades authored missions.
+   * The only thing the model contributed is the briefing text, so a challenge is
+   * exactly as gradable as anything else in the curriculum.
+   */
+  async generateChallenge(lessonId, difficultyShift) {
+    set({ challengeBusy: true });
+    try {
+      await get().openLesson(lessonId);
+      const lesson = get().lesson;
+      const specId = lesson?.lab?.id;
+      if (!specId) throw new Error('questa lezione non ha un laboratorio');
+
+      const res = await api.generate(lessonId, difficultyShift);
+      if (get().labSpecId !== specId || !get().lab) await get().startLab(specId);
+
+      set({
+        challengeBusy: false,
+        lastChallenge: {
+          exerciseId: res.exercise.id,
+          derivedFrom: res.derivedFrom,
+          scenarioBy: res.scenarioBy ?? 'authored',
+        },
+      });
+      await get().startAttempt(res.exercise);
+    } catch (error) {
+      set({ challengeBusy: false });
+      get().pushToast({ kind: 'error', title: 'Sfida non generata', detail: String(error) });
+    }
   },
 
   async startAttempt(exercise) {
