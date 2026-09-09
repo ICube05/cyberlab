@@ -23,6 +23,7 @@ export const LABS: LabSpec[] = [
       host: 'vault.lab',
     },
     surfaces: ['request', 'browser', 'database', 'logs', 'editor', 'files'],
+    entryPath: '/profile.php?id=15',
     initialState: [
       'Non autenticato.',
       'Ti viene fornito un account: seba / PrimaveraFredda!24.',
@@ -51,6 +52,7 @@ export const LABS: LabSpec[] = [
       host: 'catalog.lab',
     },
     surfaces: ['request', 'browser', 'sql', 'database', 'logs'],
+    entryPath: '/search?q=laptop',
     initialState: [
       'La ricerca prodotti è pubblica.',
       'Esiste un login staff con un account admin dalla password sconosciuta.',
@@ -96,6 +98,7 @@ export const LABS: LabSpec[] = [
       host: 'helpdesk.lab',
     },
     surfaces: ['request', 'browser', 'files', 'editor', 'logs'],
+    entryPath: '/cerca?q=test',
     initialState: [
       'La ricerca e i commenti sono pubblici, nessun login richiesto.',
       'Un agente di supporto apre i ticket poco dopo che ricevono un commento.',
