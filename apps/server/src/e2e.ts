@@ -43,7 +43,10 @@ async function main(): Promise<void> {
   // 1. health & curriculum
   const health = await j('GET', '/api/health');
   check('health ok', health.body.ok === true);
-  check('3 ready lessons', health.body.curriculum.ready === 3);
+  // Not a hard-coded count: `ready` grows every time a lesson gains a real lab,
+  // and an assertion pinned to today's number fails on the next one instead of
+  // catching anything. What matters is that some lesson is genuinely playable.
+  check('has ready lessons', health.body.curriculum.ready >= 3, `got ${health.body.curriculum.ready}`);
 
   const cur = await j('GET', '/api/curriculum');
   check('curriculum has 11 levels', cur.body.levels.length === 11);

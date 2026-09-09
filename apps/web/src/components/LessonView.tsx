@@ -4,6 +4,58 @@ import { Icon } from '../icons.js';
 import type { Difficulty } from '@cyberlab/core';
 
 /**
+ * What a theory lesson still needs to count as done.
+ *
+ * A lesson without missions completes when every block has been seen and every
+ * inline quiz answered — a wrong answer counts, it just does not earn the XP.
+ * That rule was invisible, so a learner who answered one quiz and stopped had
+ * no way to know why the next lesson stayed locked. This says it plainly.
+ */
+function TheoryCompletion({ lesson }: { lesson: NonNullable<ReturnType<typeof useStore.getState>['lesson']> }) {
+  const seen = useStore((s) => s.seenBlocks);
+  const l = lesson.lesson;
+  const blocks = [...l.theory, ...(l.practice ?? [])];
+  const quizzes = blocks.filter((b) => b.kind === 'quiz');
+  const seenCount = blocks.filter((b) => seen.has(b.id)).length;
+  const answered = quizzes.filter((q) => (lesson.progress?.quiz?.[q.id]?.attempts ?? 0) > 0).length;
+  const done = lesson.progress?.state === 'completed' || lesson.progress?.state === 'mastered';
+
+  if (done) {
+    return (
+      <div className="mt-8 flex items-center gap-2 rounded-xl border border-[var(--color-flux-dim)] bg-[color-mix(in_oklab,var(--color-flux)_8%,transparent)] p-4 text-[12.5px] text-[var(--color-ink-200)]">
+        <Icon.checkCircle size={16} className="shrink-0 text-[var(--color-flux)]" />
+        <span><span className="font-semibold text-[var(--color-flux)]">Lezione completata.</span> La lezione successiva è sbloccata.</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-8 rounded-xl border border-[var(--color-line)] p-4">
+      <div className="mb-2 text-[12px] font-semibold uppercase tracking-wider text-[var(--color-ink-400)]">Per completare la lezione</div>
+      <ul className="space-y-1.5 text-[12.5px]">
+        <li className="flex items-center gap-2">
+          {seenCount >= blocks.length ? <Icon.checkCircle size={14} className="text-[var(--color-flux)]" /> : <Icon.circle size={13} className="text-[var(--color-ink-500)]" />}
+          <span className={seenCount >= blocks.length ? 'text-[var(--color-ink-300)]' : 'text-[var(--color-ink-200)]'}>
+            Scorri tutta la lezione — <span className="mono">{seenCount}/{blocks.length}</span> blocchi visti
+          </span>
+        </li>
+        {quizzes.length > 0 && (
+          <li className="flex items-center gap-2">
+            {answered >= quizzes.length ? <Icon.checkCircle size={14} className="text-[var(--color-flux)]" /> : <Icon.circle size={13} className="text-[var(--color-ink-500)]" />}
+            <span className={answered >= quizzes.length ? 'text-[var(--color-ink-300)]' : 'text-[var(--color-ink-200)]'}>
+              Rispondi ai quiz — <span className="mono">{answered}/{quizzes.length}</span> risposti
+            </span>
+          </li>
+        )}
+      </ul>
+      <p className="mt-2 text-[11.5px] text-[var(--color-ink-500)]">
+        Una risposta sbagliata conta comunque: ti mostra quella corretta e non ti blocca. Azzeccarla dà XP e mastery.
+      </p>
+    </div>
+  );
+}
+
+/**
  * The theory column.
  *
  * Renders the lesson header (title, "Lesson n / m", difficulty, time), then the
@@ -97,6 +149,8 @@ export function LessonView() {
                 </ul>
               </div>
             )}
+
+            {l.status === 'theory-only' && <TheoryCompletion lesson={lesson} />}
           </>
         )}
       </div>

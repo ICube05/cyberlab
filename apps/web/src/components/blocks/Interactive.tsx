@@ -116,15 +116,21 @@ export function Quiz({ block, lessonId }: { block: QuizBlock; lessonId: string }
 
   const [selected, setSelected] = useState<string[]>([]);
   const [submitted, setSubmitted] = useState<boolean | null>(null);
+  // Retrying clears the restored verdict so the options unlock again. Without
+  // it an already-answered quiz stayed frozen on its old result: the options
+  // were disabled, so clicking the right answer did nothing and the stale
+  // "Non proprio" kept showing — it looked like a correct answer being refused.
+  const [retrying, setRetrying] = useState(false);
 
   // Reset the local answer when the lesson (or block) changes, so a quiz that
   // shares a block id with one in another lesson never inherits its state.
   useEffect(() => {
     setSelected([]);
     setSubmitted(null);
+    setRetrying(false);
   }, [block.id, lessonId]);
 
-  const answeredCorrect = submitted ?? persistedCorrect;
+  const answeredCorrect = submitted ?? (retrying ? null : persistedCorrect);
   const result = answeredCorrect === null ? null : { correct: answeredCorrect };
 
   const toggle = (id: string) => {
@@ -138,11 +144,17 @@ export function Quiz({ block, lessonId }: { block: QuizBlock; lessonId: string }
     setSubmitted(res.correct);
   };
 
+  const retry = () => {
+    setSelected([]);
+    setSubmitted(null);
+    setRetrying(true);
+  };
+
   // When restoring an already-answered quiz, show the exact options the learner
   // picked (persisted on the server): a wrong pick reads red and the correct one
   // green, the same as right after submitting — not a lone green tick on the
   // right answer, which looked like "you got it right" next to "Non proprio".
-  const shownSelected = submitted === null && persistedCorrect !== null ? saved?.selected ?? [] : selected;
+  const shownSelected = submitted === null && !retrying && persistedCorrect !== null ? saved?.selected ?? [] : selected;
 
   return (
     <div className="my-4 rounded-xl border border-[var(--color-line)] bg-[var(--color-abyss-800)] p-4">
@@ -191,6 +203,13 @@ export function Quiz({ block, lessonId }: { block: QuizBlock; lessonId: string }
             {result.correct ? '✓ Corretto. ' : '✗ Non proprio. '}
           </span>
           {renderInline(block.explanation)}
+          {!result.correct && (
+            <div className="mt-2">
+              <button className="btn !py-1 !text-[11.5px]" onClick={retry}>
+                <Icon.refresh size={12} /> Riprova
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>
