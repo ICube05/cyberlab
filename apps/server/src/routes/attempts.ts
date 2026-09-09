@@ -75,6 +75,31 @@ export function registerAttemptRoutes(app: FastifyInstance, services: Services):
     });
   });
 
+  /**
+   * Abandon an attempt.
+   *
+   * A learner who opens the wrong mission — or wants to read the theory again
+   * before being graded — needs a way out that is not "submit and fail". The
+   * attempt is closed without evaluation, so it never reaches the mastery
+   * model, and the lab is released from the live-objective preview.
+   */
+  app.delete('/api/attempts/:id', async (request, reply) => {
+    const userId = userIdFrom(request);
+    const { id } = request.params as { id: string };
+    const attempt = store.getAttempt(id);
+    if (!attempt || attempt.userId !== userId) {
+      return reply.code(404).send({ error: 'not_found', message: 'Attempt not found' });
+    }
+    if (attempt.finishedAt) {
+      return reply.send({ ok: true, alreadyFinished: true });
+    }
+    attempt.finishedAt = Date.now();
+    attempt.abandoned = true;
+    store.saveAttempt(attempt);
+    if (attempt.labInstanceId) activeAttempts.delete(`${userId}:${attempt.labInstanceId}`);
+    return reply.send({ ok: true, alreadyFinished: false });
+  });
+
   app.post('/api/attempts/:id/submit', async (request, reply) => {
     const userId = userIdFrom(request);
     const { id } = request.params as { id: string };

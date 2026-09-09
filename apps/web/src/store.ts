@@ -75,6 +75,8 @@ interface State {
 
   // ui
   sidebarOpen: boolean;
+  /** Collapses the lesson outline inside the roadmap sidebar. */
+  outlineCollapsed: boolean;
   commandPaletteOpen: boolean;
   toasts: Toast[];
   seenBlocks: Set<string>;
@@ -92,6 +94,7 @@ interface State {
   resetLab(): Promise<void>;
 
   startAttempt(exercise: Exercise): Promise<void>;
+  abandonAttempt(): Promise<void>;
   revealHint(hintId: string): Promise<void>;
   setReportField(field: string, value: string): void;
   submitAttempt(): Promise<void>;
@@ -102,12 +105,37 @@ interface State {
   askTutor(message?: string, mode?: TutorMode): Promise<void>;
 
   toggleSidebar(open?: boolean): void;
+  toggleOutline(collapsed?: boolean): void;
   toggleCommandPalette(open?: boolean): void;
   pushToast(t: Omit<Toast, 'id'>): void;
   dismissToast(id: string): void;
 }
 
 let toastSeq = 0;
+
+/**
+ * Panel layout is a preference, not session state.
+ *
+ * Collapsing the tutor or the lesson outline is something a learner does to get
+ * room to work; re-expanding it on every reload would undo the choice. These
+ * two helpers keep it in localStorage and never throw when it is unavailable.
+ */
+function readFlag(key: string, fallback: boolean): boolean {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw === null ? fallback : raw === '1';
+  } catch {
+    return fallback;
+  }
+}
+
+function writeFlag(key: string, value: boolean): void {
+  try {
+    localStorage.setItem(key, value ? '1' : '0');
+  } catch {
+    /* private mode, blocked storage — the flag simply does not persist. */
+  }
+}
 
 export const useStore = create<State>((set, get) => ({
   booted: false,
@@ -117,8 +145,9 @@ export const useStore = create<State>((set, get) => ({
   tutorMessages: [],
   tutorStreaming: false,
   tutorProvider: 'offline',
-  tutorPanelOpen: true,
-  sidebarOpen: true,
+  tutorPanelOpen: readFlag('cyberlab.tutorOpen', true),
+  sidebarOpen: readFlag('cyberlab.sidebarOpen', true),
+  outlineCollapsed: readFlag('cyberlab.outlineCollapsed', false),
   commandPaletteOpen: false,
   toasts: [],
   seenBlocks: new Set(),
@@ -237,6 +266,27 @@ export const useStore = create<State>((set, get) => ({
     }
   },
 
+  /**
+   * Leave an active mission without being graded.
+   *
+   * The live mission console had no exit: once started, the only way out was
+   * Submit — which meant a failed attempt on record for opening the wrong one.
+   * Abandoning closes the attempt server-side so it never reaches mastery, and
+   * releases the lab from the objective preview.
+   */
+  async abandonAttempt() {
+    const attempt = get().attempt;
+    if (!attempt) return;
+    set({ attempt: undefined });
+    try {
+      await api.abandonAttempt(attempt.attemptId);
+    } catch {
+      // The mission is already closed for the learner; a failed cleanup call
+      // must not put them back inside it.
+    }
+    get().pushToast({ kind: 'info', title: 'Missione abbandonata', detail: 'Nessuna valutazione registrata.' });
+  },
+
   async revealHint(hintId) {
     const attempt = get().attempt;
     if (!attempt) return;
@@ -284,7 +334,11 @@ export const useStore = create<State>((set, get) => ({
   },
 
   toggleTutor(open) {
-    set((s) => ({ tutorPanelOpen: open ?? !s.tutorPanelOpen }));
+    set((s) => {
+      const next = open ?? !s.tutorPanelOpen;
+      writeFlag('cyberlab.tutorOpen', next);
+      return { tutorPanelOpen: next };
+    });
   },
 
   async askTutor(message, mode) {
@@ -350,7 +404,18 @@ export const useStore = create<State>((set, get) => ({
   },
 
   toggleSidebar(open) {
-    set((s) => ({ sidebarOpen: open ?? !s.sidebarOpen }));
+    set((s) => {
+      const next = open ?? !s.sidebarOpen;
+      writeFlag('cyberlab.sidebarOpen', next);
+      return { sidebarOpen: next };
+    });
+  },
+  toggleOutline(collapsed) {
+    set((s) => {
+      const next = collapsed ?? !s.outlineCollapsed;
+      writeFlag('cyberlab.outlineCollapsed', next);
+      return { outlineCollapsed: next };
+    });
   },
   toggleCommandPalette(open) {
     set((s) => ({ commandPaletteOpen: open ?? !s.commandPaletteOpen }));

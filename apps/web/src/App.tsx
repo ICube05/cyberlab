@@ -37,6 +37,17 @@ export function App() {
   if (bootError) return <BootError message={bootError} />;
 
   const hasLab = Boolean(lesson?.lab);
+  const toggleSidebar = useStore.getState().toggleSidebar;
+  const toggleTutor = useStore.getState().toggleTutor;
+
+  const selectSidebar = (tab: 'roadmap' | 'mastery') => {
+    if (sidebarOpen && sidebarTab === tab) {
+      toggleSidebar(false);
+      return;
+    }
+    setSidebarTab(tab);
+    toggleSidebar(true);
+  };
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
@@ -44,8 +55,23 @@ export function App() {
       <div className="flex min-h-0 flex-1">
         {/* activity rail */}
         <nav className="flex w-11 shrink-0 flex-col items-center gap-1 border-r border-[var(--color-line)] bg-[var(--color-abyss-800)] py-2">
-          <RailButton active={sidebarOpen && sidebarTab === 'roadmap'} icon="layers" label="Roadmap" onClick={() => { useStore.getState().toggleSidebar(true); setSidebarTab('roadmap'); }} />
-          <RailButton active={sidebarOpen && sidebarTab === 'mastery'} icon="brain" label="Competenze" onClick={() => { useStore.getState().toggleSidebar(true); setSidebarTab('mastery'); }} />
+          {/*
+            Clicking the *active* tab collapses the panel, the way an IDE's
+            activity bar behaves. Before, both buttons forced it open, so there
+            was no way back to a full-width lesson except the top bar.
+          */}
+          <RailButton
+            active={sidebarOpen && sidebarTab === 'roadmap'}
+            icon="layers"
+            label="Roadmap"
+            onClick={() => selectSidebar('roadmap')}
+          />
+          <RailButton
+            active={sidebarOpen && sidebarTab === 'mastery'}
+            icon="brain"
+            label="Competenze"
+            onClick={() => selectSidebar('mastery')}
+          />
         </nav>
 
         {/* sidebar */}
@@ -87,10 +113,25 @@ export function App() {
             )}
           </div>
 
-          {tutorOpen && (
+          {tutorOpen ? (
             <div className="w-[340px] shrink-0 border-l border-[var(--color-line)]">
               <TutorPanel />
             </div>
+          ) : (
+            // A collapsed panel still needs a handle, or it is just gone.
+            <button
+              onClick={() => toggleTutor(true)}
+              title="Apri il tutor (⌘J)"
+              className="group flex w-8 shrink-0 flex-col items-center gap-2 border-l border-[var(--color-line)] bg-[var(--color-abyss-800)] py-2.5 text-[var(--color-ink-500)] transition-colors hover:text-[var(--color-violet)]"
+            >
+              <Icon.sparkles size={15} />
+              <span
+                className="text-[10px] font-semibold uppercase tracking-[0.18em]"
+                style={{ writingMode: 'vertical-rl' }}
+              >
+                Tutor
+              </span>
+            </button>
           )}
         </main>
       </div>

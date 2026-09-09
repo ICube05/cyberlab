@@ -83,14 +83,58 @@ function ActiveMission() {
   const revealHint = useStore((s) => s.revealHint);
   const setReportField = useStore((s) => s.setReportField);
   const submitAttempt = useStore((s) => s.submitAttempt);
+  const abandonAttempt = useStore((s) => s.abandonAttempt);
   const setTutor = useStore((s) => s.askTutor);
+  const [confirmExit, setConfirmExit] = useState(false);
   const { exercise, hintsRevealed, liveObjectives, report, submitting } = attempt;
 
   const nextHint = exercise.hints.filter((h) => !hintsRevealed.some((r) => r.id === h.id)).sort((a, b) => a.level - b.level)[0];
   const passedCount = liveObjectives.filter((o) => o.passed).length;
+  const started = passedCount > 0 || hintsRevealed.length > 0;
+
+  // Leaving is cheap when nothing has happened yet and deliberate once it has,
+  // so a half-solved mission is never thrown away by a stray click.
+  const leave = () => {
+    if (started && !confirmExit) {
+      setConfirmExit(true);
+      return;
+    }
+    void abandonAttempt();
+  };
 
   return (
     <div className="flex h-full flex-col">
+      {/* mission bar — the way out of a live mission */}
+      <div className="flex shrink-0 items-center gap-2 border-b border-[var(--color-line)] bg-[var(--color-abyss-900)] px-2.5 py-1.5">
+        <span className="flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-wider text-[var(--color-signal)]">
+          <span className="relative flex h-1.5 w-1.5">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--color-signal)] opacity-70" />
+            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[var(--color-signal)]" />
+          </span>
+          Missione in corso
+        </span>
+        <span className="mono ml-auto text-[10.5px] text-[var(--color-ink-500)]">{passedCount}/{liveObjectives.length}</span>
+        {confirmExit ? (
+          <div className="flex items-center gap-1">
+            <span className="text-[10.5px] text-[var(--color-ink-400)]">Uscire?</span>
+            <button className="btn btn-ghost !px-1.5 !py-0.5 !text-[10.5px] !text-[var(--color-breach)]" onClick={() => void abandonAttempt()}>
+              Esci
+            </button>
+            <button className="btn btn-ghost !px-1.5 !py-0.5 !text-[10.5px]" onClick={() => setConfirmExit(false)}>
+              Annulla
+            </button>
+          </div>
+        ) : (
+          <button
+            className="btn btn-ghost !px-1.5 !py-0.5 text-[10.5px]"
+            onClick={leave}
+            title="Abbandona la missione — nessuna valutazione viene registrata"
+          >
+            <Icon.x size={12} /> Esci
+          </button>
+        )}
+      </div>
+
       <div className="min-h-0 flex-1 overflow-y-auto p-3">
         {/* briefing */}
         <div className="rounded-xl border border-[var(--color-line)] bg-[var(--color-abyss-800)] p-3">
@@ -179,9 +223,16 @@ function ActiveMission() {
       </div>
 
       {/* submit bar */}
-      <div className="border-t border-[var(--color-line)] p-2.5">
-        <button className="btn btn-primary w-full justify-center" onClick={submitAttempt} disabled={submitting}>
+      <div className="flex gap-2 border-t border-[var(--color-line)] p-2.5">
+        <button className="btn btn-primary flex-1 justify-center" onClick={submitAttempt} disabled={submitting}>
           {submitting ? 'Valutazione…' : <><Icon.check size={14} /> Invia e valuta</>}
+        </button>
+        <button
+          className="btn btn-ghost !px-2.5"
+          onClick={leave}
+          title="Abbandona la missione — nessuna valutazione viene registrata"
+        >
+          <Icon.x size={14} />
         </button>
       </div>
     </div>
@@ -191,6 +242,7 @@ function ActiveMission() {
 function MissionResult() {
   const attempt = useStore((s) => s.attempt)!;
   const clear = useStore((s) => s.clearAttemptResult);
+  const abandon = useStore((s) => s.abandonAttempt);
   const startAttempt = useStore((s) => s.startAttempt);
   const askTutor = useStore((s) => s.askTutor);
   const [explaining, setExplaining] = useState(false);
@@ -271,6 +323,13 @@ function MissionResult() {
           </button>
         )}
       </div>
+
+      <button
+        className="btn btn-ghost mt-2 w-full justify-center !py-1.5 text-[11.5px] text-[var(--color-ink-400)]"
+        onClick={() => void abandon()}
+      >
+        <Icon.arrowLeft size={13} /> Torna alle missioni
+      </button>
     </div>
   );
 }

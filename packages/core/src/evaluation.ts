@@ -443,4 +443,6 @@ export interface Attempt {
   hintsUsed: string[];
   report?: Record<string, string>;
   evaluation?: EvaluationResult;
+  /** Closed by the learner without being graded. Never reaches mastery. */
+  abandoned?: boolean;
 }

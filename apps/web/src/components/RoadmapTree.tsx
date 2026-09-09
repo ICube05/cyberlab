@@ -16,11 +16,18 @@ export function RoadmapTree() {
   const curriculum = useStore((s) => s.curriculum);
   const activeLessonId = useStore((s) => s.activeLessonId);
   const openLesson = useStore((s) => s.openLesson);
+  const toggleSidebar = useStore((s) => s.toggleSidebar);
+  const toggleOutline = useStore((s) => s.toggleOutline);
 
   const lessonStates = curriculum?.lessonStates ?? {};
   const [collapsed, setCollapsed] = useState<Set<string>>(() => {
-    // Start with everything past level 1 collapsed to keep the tree scannable.
+    // Fully folded if that is how the learner left it; otherwise everything
+    // past level 1 starts collapsed to keep the tree scannable.
     const initial = new Set<string>();
+    if (useStore.getState().outlineCollapsed) {
+      for (const level of useStore.getState().curriculum?.levels ?? []) initial.add(level.id);
+      return initial;
+    }
     curriculumInitialCollapse(initial);
     return initial;
   });
@@ -55,13 +62,39 @@ export function RoadmapTree() {
       return next;
     });
 
+  const allLevelIds = byLevel.map((b) => b.level.id);
+  const everythingCollapsed = allLevelIds.length > 0 && allLevelIds.every((id) => collapsed.has(id));
+
+  const foldAll = () => {
+    const next = !everythingCollapsed;
+    setCollapsed(next ? new Set(allLevelIds) : new Set());
+    toggleOutline(next);
+  };
+
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center justify-between px-3 pt-3 pb-2">
+      <div className="flex items-center gap-1.5 px-3 pt-3 pb-2">
         <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--color-ink-500)]">
           Roadmap
         </span>
         <span className="chip">{curriculum.lessons.filter((l) => l.status === 'ready').length} live</span>
+        <div className="ml-auto flex items-center gap-0.5">
+          {/* Fold the whole outline in one click — the tree is 58 lessons deep. */}
+          <button
+            className="btn btn-ghost !px-1 !py-1"
+            onClick={foldAll}
+            title={everythingCollapsed ? 'Espandi tutti i livelli' : 'Comprimi tutti i livelli'}
+          >
+            {everythingCollapsed ? <Icon.chevronDown size={13} /> : <Icon.chevronUp size={13} />}
+          </button>
+          <button
+            className="btn btn-ghost !px-1 !py-1"
+            onClick={() => toggleSidebar(false)}
+            title="Nascondi la scaletta (⌘B)"
+          >
+            <Icon.panelLeft size={13} />
+          </button>
+        </div>
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto px-1.5 pb-4">
         {byLevel.map(({ level, modules, done, total }) => {

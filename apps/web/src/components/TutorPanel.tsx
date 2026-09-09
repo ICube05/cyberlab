@@ -22,6 +22,8 @@ export function TutorPanel() {
   const setMode = useStore((s) => s.setTutorMode);
   const lab = useStore((s) => s.lab);
   const lesson = useStore((s) => s.lesson);
+  const health = useStore((s) => s.health);
+  const toggleTutor = useStore((s) => s.toggleTutor);
   const [draft, setDraft] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -49,9 +51,19 @@ export function TutorPanel() {
           <Icon.sparkles size={14} />
         </span>
         <span className="text-[12.5px] font-semibold text-[var(--color-ink-100)]">Tutor</span>
-        <span className={`chip !text-[9.5px] ${provider === 'offline' ? '' : '!border-[var(--color-flux-dim)] !text-[var(--color-flux)]'}`} title={provider === 'offline' ? 'Nessun provider AI attivo: risposte deterministiche dalla pedagogia della lezione' : ''}>
+        <span
+          className={`chip !text-[9.5px] ${provider === 'offline' ? '' : '!border-[var(--color-flux-dim)] !text-[var(--color-flux)]'}`}
+          title={offlineExplanation(provider, health)}
+        >
           {provider === 'offline' ? 'offline' : provider}
         </span>
+        <button
+          className="btn btn-ghost ml-auto !px-1.5 !py-1"
+          onClick={() => toggleTutor(false)}
+          title="Comprimi il tutor (⌘J)"
+        >
+          <Icon.panelRight size={14} />
+        </button>
       </div>
 
       {/* mode chips */}
@@ -170,4 +182,21 @@ function TutorMarkdown({ text }: { text: string }) {
       })}
     </div>
   );
+}
+
+
+/**
+ * Say *why* the tutor is offline.
+ *
+ * "offline" on its own reads like a bug. The server already knows the answer —
+ * a missing key, a refused key, an unreachable Ollama — so the chip carries it.
+ */
+function offlineExplanation(provider: string, health?: { aiDetail?: string; aiRequested?: string; diagnostics?: string[] }): string {
+  if (provider !== 'offline') return health?.aiDetail ?? '';
+  const diagnostic = health?.diagnostics?.[0];
+  if (diagnostic) return diagnostic;
+  if (health?.aiRequested && health.aiRequested !== 'offline') {
+    return `${health.aiRequested} richiesto ma non raggiungibile: ${health.aiDetail ?? 'nessun dettaglio'}`;
+  }
+  return 'Nessun provider AI configurato: le risposte vengono dalla pedagogia autoriale della lezione. Imposta AI_PROVIDER nel .env per usare un modello.';
 }

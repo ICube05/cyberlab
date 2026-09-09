@@ -57,6 +57,7 @@ export class ApiError extends Error {
 
 export const api = {
   health: () => request<HealthResponse>('GET', '/api/health'),
+  abandonAttempt: (attemptId: string) => request<{ ok: boolean }>('DELETE', `/api/attempts/${attemptId}`),
   curriculum: () => request<CurriculumResponse>('GET', '/api/curriculum'),
   progress: () => request<ProgressResponse>('GET', '/api/progress'),
   lesson: (id: string) => request<LessonResponse>('GET', `/api/lessons/${id}`),
