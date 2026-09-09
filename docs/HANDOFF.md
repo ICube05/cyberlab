@@ -128,7 +128,54 @@ laboratorio. Roadmap, intestazione della lezione e status bar distinguono ora i
 tre stati (`ready` / `theory-only` / `planned`) invece di riportare solo "3
 live".
 
-Stato attuale: **58 lezioni — 3 con lab, 10 di teoria, 45 pianificate.**
+Stato attuale: **58 lezioni — 5 con lab, 13 di teoria, 40 pianificate.**
+
+---
+
+## Aggiornamento — sessione successiva
+
+Questa sezione descrive cosa è stato fatto DOPO la stesura originale qui sopra.
+Il resto del documento resta valido come riferimento sui pattern; i punti A e B
+di "Cosa resta da fare" sono ora in gran parte completati.
+
+### Fatto
+
+1. **Le 8 lezioni di Web Security** (punto A) sono scritte, tutte con la
+   procedura descritta sotto: `web.command-injection`, `web.xss`, `web.csrf`,
+   `web.ssrf`, `web.jwt`, `web.path-traversal`, `web.file-upload`,
+   `web.business-logic`. Ognuna è un commit separato con `typecheck`/`test`
+   verdi. `web.jwt` usa il blocco `jwt` con due token firmati per davvero (uno
+   HS256 con segreto `secret`, uno `alg:none`); `web.csrf` usa il `cookie-jar`.
+   Aggiunta la skill `file-upload` in `skills.ts` (additiva).
+
+2. **Nuovo target di lab `web.helpdesk`** (punto B) in
+   `packages/lab-engine/src/inproc/targets/helpdesk.ts`, con due vulnerabilità
+   reali e indipendenti — XSS (riflesso + persistente, con furto della sessione
+   di un agente *simulato in modo onesto* e ingresso in `/staff`) e path
+   traversal (letture attraverso il `Vfs` con permessi veri: `/etc/passwd` sì,
+   `/etc/shadow` no). Le correzioni si applicano in `/srv/helpdesk/config.json`
+   (`escapeOutput`, `confineAttachments`) e cambiano davvero il comportamento.
+   Spec in `labs.ts` (`lab.helpdesk`), builder in `targets/index.ts`, esercizi
+   in `exercises/xss.ts` e `exercises/path-traversal.ts` (valutati solo su
+   segnali del target). `web.xss` e `web.path-traversal` sono ora **`ready`**.
+   Otto test d'integrazione in `labs.test.ts` eseguono gli exploit end-to-end.
+
+3. **UI.** Corretto il vicolo cieco della missione completata (non si tornava
+   più all'elenco: `clearAttemptResult` chiudeva solo il risultato e la submit
+   non liberava il lab da `activeAttempts`). Aggiunto il collasso anche a
+   livello di **modulo** nell'albero (prima solo per livello). Editor IntelliJ
+   e collasso del tutor erano già a posto: verificati.
+
+### Cosa resta
+
+- **Push su GitHub ancora bloccato** (vedi punto C): il proxy risponde 403
+  perché la GitHub App di Claude non è installata/autorizzata per l'org
+  `ICube05`. I commit sono tutti in locale sul branch di lavoro. Serve un
+  intervento dell'utente/admin (vedi sotto).
+- Le altre lezioni web restano `theory-only` finché non hanno un lab
+  (`command-injection`, `csrf`, `ssrf`, `jwt`, `file-upload`, `business-logic`).
+  Il pattern del target multi-vulnerabilità (`helpdesk.ts`) è il modello da
+  seguire per aggiungerne altri.
 
 ---
 
