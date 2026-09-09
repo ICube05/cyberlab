@@ -97,14 +97,25 @@ export const howInternetWorksLesson: Lesson = {
     },
     {
       id: 'b-code',
-      kind: 'code',
-      language: 'text',
-      filename: 'incapsulamento',
-      code: `[ Ethernet | IP | TCP | GET /login HTTP/1.1 ... ]
-  \\_______/  \\__/  \\__/  \\____________________/
-   dove sul  quale  quale        cosa
-   cavo      host   porta        chiedo`,
-      caption: 'Lo stesso byte stream, letto da quattro punti di vista diversi.',
+      kind: 'flow',
+      title: 'Incapsulamento: lo stesso byte stream, quattro punti di vista',
+      nodes: [
+        { id: 'eth', label: 'Ethernet', sublabel: 'dove, sul cavo', col: 0, row: 0, tone: 'muted', tooltip: 'Header di livello 2 (indirizzi MAC). Conta solo per il prossimo salto sul cavo, poi viene scartato e riscritto.' },
+        { id: 'ip', label: 'IP', sublabel: 'quale host', col: 1, row: 0, tone: 'accent', tooltip: 'Header di rete: indirizzo IP sorgente e destinazione. È la busta con l’indirizzo, che attraversa tutta Internet.' },
+        { id: 'tcp', label: 'TCP', sublabel: 'quale porta', col: 2, row: 0, tone: 'default', tooltip: 'Header di trasporto: porta sorgente e destinazione. Sceglie quale programma, su quella macchina, riceve i dati.' },
+        { id: 'http', label: 'HTTP', sublabel: 'cosa chiedo', col: 3, row: 0, tone: 'success', tooltip: 'Il payload applicativo: GET /login HTTP/1.1 … — la richiesta vera e propria, avvolta da tutti gli header precedenti.' },
+      ],
+      edges: [
+        { from: 'eth', to: 'ip' },
+        { from: 'ip', to: 'tcp' },
+        { from: 'tcp', to: 'http' },
+      ],
+      steps: [
+        { label: 'Arriva il frame: si legge l’header Ethernet — dice solo qual è il prossimo salto sul cavo.', highlight: ['eth'] },
+        { label: 'Scartato Ethernet, l’header IP dice a quale host è diretto il pacchetto.', highlight: ['ip'] },
+        { label: 'Scartato IP, l’header TCP dice a quale porta — cioè a quale programma — consegnarlo.', highlight: ['tcp'] },
+        { label: 'Restano i dati: la richiesta HTTP vera e propria. Il server ha aperto tutte le buste, in ordine inverso.', highlight: ['http'] },
+      ],
     },
     {
       id: 'b-3',

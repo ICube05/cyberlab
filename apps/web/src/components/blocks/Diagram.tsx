@@ -150,69 +150,145 @@ export function FlowDiagram({ block }: { block: FlowDiagramBlock }) {
 }
 
 export function SequenceDiagram({ block }: { block: SequenceBlock }) {
-  const [revealed, setRevealed] = useState(block.messages.length);
+  // Highlight-based walkthrough, like the flow diagram: the whole exchange is
+  // visible at rest (step -1) and stepping just spotlights one message at a
+  // time. The old version revealed messages progressively, so it opened in its
+  // final state and you had to hit Reset before you could watch it play.
+  const [step, setStep] = useState(-1);
   const laneW = 150;
-  const PAD = 20;
-  const width = PAD * 2 + (block.actors.length - 1) * laneW;
-  const rowH = 46;
-  const headerH = 44;
-  const height = headerH + block.messages.length * rowH + 20;
-  const laneX = (id: string) => PAD + block.actors.findIndex((a) => a.id === id) * laneW;
+  // Actor pills are sized to their label, and the drawing leaves room for the
+  // pills that sit at the first and last lanes — otherwise the outermost labels
+  // spill outside the viewBox and get clipped (which is exactly what happened).
+  const ACTOR_TINT = ['var(--color-signal)', 'var(--color-violet)', 'var(--color-flux)', 'var(--color-amber)'];
+  const pillW = (label: string) => Math.max(96, label.length * 7 + 34);
+  const maxHalf = Math.max(...block.actors.map((a) => pillW(a.label) / 2));
+  const GUTTER = 30; // left margin for the step-number badges
+  const leftX = Math.max(GUTTER + 8, maxHalf) + 14;
+  const headerH = 52;
+  const laneGap = Math.max(laneW, 176);
+
+  // Rows grow when a message carries a detail line, so the note has room.
+  const rowH = block.messages.map((m) => (m.detail ? 66 : 46));
+  const rowTop: number[] = [];
+  let acc = headerH + 8;
+  for (const h of rowH) {
+    rowTop.push(acc);
+    acc += h;
+  }
+  const laneX = (id: string) => leftX + block.actors.findIndex((a) => a.id === id) * laneGap;
+  const rightX = leftX + (block.actors.length - 1) * laneGap;
+  const width = rightX + maxHalf + 16;
+  const height = acc + 12;
+  const bandLeft = GUTTER - 8;
 
   return (
     <figure className="my-4 overflow-hidden rounded-xl border border-[var(--color-line)] bg-[var(--color-abyss-900)]">
       <figcaption className="flex items-center justify-between border-b border-[var(--color-line)] px-4 py-2 text-[12px] font-medium text-[var(--color-ink-300)]">
-        <span>Sequenza client / server</span>
-        <span className="flex items-center gap-1">
-          <button className="btn btn-ghost !px-1.5 !py-1" onClick={() => setRevealed(1)} title="Ricomincia">
-            <Icon.refresh size={13} />
+        <span className="min-w-0 truncate">Sequenza client / server</span>
+        <span className="flex shrink-0 items-center gap-1">
+          <button className="btn btn-ghost !px-1.5 !py-1" onClick={() => setStep((s) => Math.max(-1, s - 1))} disabled={step < 0} title="Passo precedente">
+            <Icon.chevronRight size={13} className="rotate-180" />
           </button>
+          <span className="mono w-10 text-center text-[11px] text-[var(--color-ink-500)]">
+            {step < 0 ? '—' : `${step + 1}/${block.messages.length}`}
+          </span>
           <button
-            className="btn btn-ghost !px-2 !py-1 text-[11px]"
-            onClick={() => setRevealed((r) => Math.min(block.messages.length, r + 1))}
-            disabled={revealed >= block.messages.length}
+            className="btn btn-ghost !px-1.5 !py-1"
+            onClick={() => setStep((s) => Math.min(block.messages.length - 1, s + 1))}
+            disabled={step >= block.messages.length - 1}
+            title="Passo successivo"
           >
-            Passo →
+            <Icon.chevronRight size={13} />
           </button>
         </span>
       </figcaption>
-      <div className="overflow-x-auto p-2">
-        <svg viewBox={`0 0 ${width} ${height}`} width={width} height={height} className="max-w-full">
+      <div className="overflow-x-auto p-3">
+        <svg viewBox={`0 0 ${width} ${height}`} width={width} height={height} className="mx-auto block max-w-full">
           <defs>
-            <marker id="seq-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-              <path d="M0 0L10 5L0 10z" fill="var(--color-ink-400)" />
-            </marker>
+            {Object.entries(EDGE_TONE).map(([tone, color]) => (
+              <marker key={tone} id={`seq-arrow-${tone}`} viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0 0L10 5L0 10z" fill={color} />
+              </marker>
+            ))}
           </defs>
-          {block.actors.map((actor) => (
-            <g key={actor.id}>
-              <rect x={laneX(actor.id) - 54} y={8} width={108} height={26} rx={6} fill="var(--color-abyss-600)" stroke="var(--color-line-strong)" />
-              <text x={laneX(actor.id)} y={25} textAnchor="middle" fontSize={11.5} fontWeight={600} fill="var(--color-ink-200)">
-                {actor.label}
-              </text>
-              <line x1={laneX(actor.id)} y1={headerH} x2={laneX(actor.id)} y2={height - 10} stroke="var(--color-line)" strokeDasharray="3 4" />
-            </g>
-          ))}
-          {block.messages.slice(0, revealed).map((msg, i) => {
-            const y = headerH + i * rowH + 24;
+
+          {/* lifelines + actor pills */}
+          {block.actors.map((actor, ai) => {
+            const w = pillW(actor.label);
+            const tint = ACTOR_TINT[ai % ACTOR_TINT.length]!;
+            return (
+              <g key={actor.id}>
+                <line x1={laneX(actor.id)} y1={headerH} x2={laneX(actor.id)} y2={height - 10} stroke="var(--color-line)" strokeWidth={1.2} strokeDasharray="2 5" />
+                <rect x={laneX(actor.id) - w / 2} y={10} width={w} height={30} rx={8} fill="var(--color-abyss-700)" stroke="var(--color-line-strong)" />
+                <circle cx={laneX(actor.id) - w / 2 + 15} cy={25} r={3.5} fill={tint} />
+                <text x={laneX(actor.id) + 7} y={29} textAnchor="middle" fontSize={12} fontWeight={600} fill="var(--color-ink-100)">
+                  {actor.label}
+                </text>
+              </g>
+            );
+          })}
+
+          {/* messages */}
+          {block.messages.map((msg, i) => {
+            const dimmed = step >= 0 && i !== step;
+            const yLine = rowTop[i]! + 22;
             const x1 = laneX(msg.from);
             const x2 = laneX(msg.to);
             const self = msg.from === msg.to;
-            const color = EDGE_TONE[msg.tone ?? 'default'];
-            if (self) {
-              return (
-                <g key={i} className="animate-fade-in">
-                  <path d={`M${x1} ${y - 6} q 40 0 40 10 q 0 10 -36 10`} fill="none" stroke={color} strokeWidth={1.5} markerEnd="url(#seq-arrow)" />
-                  <text x={x1 + 48} y={y + 2} fontSize={10.5} fill="var(--color-ink-300)">{msg.label}</text>
-                </g>
-              );
-            }
-            const dir = x2 > x1 ? 1 : -1;
+            const tone = msg.tone ?? 'default';
+            const color = EDGE_TONE[tone];
+            const labelColor = tone === 'default' ? 'var(--color-ink-200)' : color;
+            const chipW = msg.label.length * 6.1 + 16;
+
             return (
-              <g key={i} className="animate-fade-in">
-                <line x1={x1} y1={y} x2={x2 - dir * 4} y2={y} stroke={color} strokeWidth={1.6} markerEnd="url(#seq-arrow)" />
-                <text x={(x1 + x2) / 2} y={y - 7} textAnchor="middle" fontSize={10.5} fontWeight={500} fill={msg.tone && msg.tone !== 'default' ? color : 'var(--color-ink-300)'}>
-                  {msg.label}
+              <g key={i} style={{ opacity: dimmed ? 0.24 : 1, transition: 'opacity 0.3s' }}>
+                {/* step badge */}
+                <circle cx={16} cy={yLine} r={9} fill={step === i ? color : 'var(--color-abyss-700)'} stroke={step === i ? color : 'var(--color-line-strong)'} />
+                <text x={16} y={yLine + 3.5} textAnchor="middle" fontSize={10} className="mono" fill={step === i ? 'var(--color-abyss-900)' : 'var(--color-ink-400)'}>
+                  {i + 1}
                 </text>
+
+                {self ? (
+                  <>
+                    <path d={`M${x1} ${yLine - 7} q 46 0 46 11 q 0 11 -42 11`} fill="none" stroke={color} strokeWidth={1.7} markerEnd={`url(#seq-arrow-${tone})`} />
+                    <text x={x1 + 56} y={yLine} fontSize={11} fontWeight={500} fill={labelColor}>{msg.label}</text>
+                  </>
+                ) : (
+                  (() => {
+                    const dir = x2 > x1 ? 1 : -1;
+                    // Responses (right→left) are dashed, the classic UML cue that
+                    // distinguishes a reply from a call.
+                    const isReturn = dir < 0;
+                    const midX = (x1 + x2) / 2;
+                    return (
+                      <>
+                        <rect x={midX - chipW / 2} y={yLine - 21} width={chipW} height={16} rx={5} fill="var(--color-abyss-900)" />
+                        <text x={midX} y={yLine - 9} textAnchor="middle" fontSize={11} fontWeight={500} fill={labelColor}>
+                          {msg.label}
+                        </text>
+                        <line
+                          x1={x1}
+                          y1={yLine}
+                          x2={x2 - dir * 5}
+                          y2={yLine}
+                          stroke={color}
+                          strokeWidth={1.8}
+                          strokeDasharray={isReturn ? '5 4' : undefined}
+                          markerEnd={`url(#seq-arrow-${tone})`}
+                        />
+                      </>
+                    );
+                  })()
+                )}
+
+                {/* the authored detail, which the old renderer dropped entirely */}
+                {msg.detail && (
+                  <foreignObject x={bandLeft + 6} y={yLine + 5} width={width - bandLeft - 20} height={rowH[i]! - 30}>
+                    <div style={{ font: '10.5px/1.35 ui-sans-serif, system-ui', color: 'var(--color-ink-500)' }}>
+                      {msg.detail}
+                    </div>
+                  </foreignObject>
+                )}
               </g>
             );
           })}

@@ -137,6 +137,23 @@ function writeFlag(key: string, value: boolean): void {
   }
 }
 
+/** String equivalents, used to remember which lesson the learner had open. */
+function readStr(key: string): string | null {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function writeStr(key: string, value: string): void {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    /* storage unavailable — persistence is best-effort, never fatal. */
+  }
+}
+
 export const useStore = create<State>((set, get) => ({
   booted: false,
   lessonLoading: false,
@@ -156,6 +173,15 @@ export const useStore = create<State>((set, get) => ({
     try {
       const [health, curriculum, progress] = await Promise.all([api.health(), api.curriculum(), api.progress()]);
       set({ health, curriculum, progress, booted: true, tutorProvider: health.aiProvider });
+      // Reopen the lesson the learner was last on, so a reload lands them where
+      // they left off instead of on an empty shell. Only for lessons that can
+      // actually be entered — a saved id for a since-locked/planned lesson is
+      // ignored rather than throwing a boot-time toast.
+      const last = readStr('cyberlab.lastLesson');
+      if (last) {
+        const summary = curriculum.lessons.find((l) => l.id === last);
+        if (summary && summary.status !== 'planned') void get().openLesson(last);
+      }
     } catch (error) {
       set({ bootError: error instanceof Error ? error.message : 'boot failed', booted: true });
     }
@@ -170,6 +196,7 @@ export const useStore = create<State>((set, get) => ({
   async openLesson(id) {
     if (get().activeLessonId === id && get().lesson) return;
     set({ lessonLoading: true, activeLessonId: id });
+    writeStr('cyberlab.lastLesson', id);
     try {
       const lesson = await api.lesson(id);
       set({ lesson, lessonLoading: false, seenBlocks: new Set(lesson.progress?.blocksSeen ?? []) });
