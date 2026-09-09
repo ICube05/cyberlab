@@ -187,10 +187,36 @@ export const useStore = create<State>((set, get) => ({
     }
   },
 
+  /**
+   * Refetch progress — and fold it back into the open lesson.
+   *
+   * `lesson.progress` is filled once, by `openLesson`, so without this it went
+   * stale the moment you answered a quiz or finished a mission: the completion
+   * panel kept saying "0 risposti", and a passed mission never got its tick.
+   * Patching each reader to look somewhere fresher only moved the problem, so
+   * the lesson payload is refreshed at the source instead — one place to keep
+   * current, and every reader of `lesson.progress` is correct by construction.
+   */
   async refreshProgress() {
     const progress = await api.progress();
     const curriculum = await api.curriculum();
-    set({ progress, curriculum });
+    set((s) => {
+      const live = s.lesson ? progress.progress.lessons[s.lesson.lesson.id] : undefined;
+      if (!s.lesson || !live) return { progress, curriculum };
+      return {
+        progress,
+        curriculum,
+        lesson: {
+          ...s.lesson,
+          progress: {
+            state: live.state,
+            blocksSeen: live.blocksSeen,
+            quiz: live.quiz,
+            exercises: live.exercises,
+          },
+        },
+      };
+    });
   },
 
   async openLesson(id) {
