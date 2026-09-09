@@ -14,11 +14,18 @@ import type { Difficulty } from '@cyberlab/core';
 function TheoryCompletion({ lesson }: { lesson: NonNullable<ReturnType<typeof useStore.getState>['lesson']> }) {
   const seen = useStore((s) => s.seenBlocks);
   const l = lesson.lesson;
+  // `lesson.progress` is only filled by `openLesson`, so it goes stale the moment
+  // you answer anything; the live progress is refetched after every answer. Read
+  // that, and fall back to the lesson payload before the first fetch lands.
+  const live = useStore((s) => s.progress?.progress.lessons[l.id]);
+  const quizState = live?.quiz ?? lesson.progress?.quiz;
+  const state = live?.state ?? lesson.progress?.state;
+
   const blocks = [...l.theory, ...(l.practice ?? [])];
   const quizzes = blocks.filter((b) => b.kind === 'quiz');
   const seenCount = blocks.filter((b) => seen.has(b.id)).length;
-  const answered = quizzes.filter((q) => (lesson.progress?.quiz?.[q.id]?.attempts ?? 0) > 0).length;
-  const done = lesson.progress?.state === 'completed' || lesson.progress?.state === 'mastered';
+  const answered = quizzes.filter((q) => (quizState?.[q.id]?.attempts ?? 0) > 0).length;
+  const done = state === 'completed' || state === 'mastered';
 
   if (done) {
     return (

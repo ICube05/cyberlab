@@ -111,7 +111,14 @@ export function Quiz({ block, lessonId }: { block: QuizBlock; lessonId: string }
   const answerQuiz = useStore((s) => s.answerQuiz);
   // Whether this quiz was already answered persists on the server; restoring it
   // means a reload shows the quiz as done (answer revealed) instead of blank.
-  const saved = useStore((s) => s.lesson?.progress?.quiz?.[block.id]);
+  //
+  // Read it from the live progress, which `refreshProgress` refetches after every
+  // answer — `lesson.progress` is only ever filled by `openLesson`, so it still
+  // held the state from when the lesson was opened. Fall back to it for the very
+  // first render, before the first progress fetch lands.
+  const saved = useStore(
+    (s) => s.progress?.progress.lessons[lessonId]?.quiz?.[block.id] ?? s.lesson?.progress?.quiz?.[block.id],
+  );
   const persistedCorrect = saved && saved.attempts > 0 ? saved.correct : null;
 
   const [selected, setSelected] = useState<string[]>([]);
