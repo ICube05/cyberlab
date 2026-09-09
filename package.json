@@ -19,6 +19,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "e2e": "pnpm --filter @cyberlab/server e2e",
+    "progress:save": "node scripts/progress.mjs",
     "clean": "rm -rf node_modules **/node_modules **/dist **/.tsbuildinfo apps/server/data"
   },
   "devDependencies": {

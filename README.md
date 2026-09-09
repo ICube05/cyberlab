@@ -101,10 +101,26 @@ Il database dei progressi è `apps/server/data/cyberlab.db` (SQLite) ed è
 **committabile di proposito**: lezioni completate, mastery, quiz e tentativi
 viaggiano con il repo, così da un'altra macchina ritrovi le cose fatte.
 
+La prima volta lo attivi tu, committandolo una volta:
+
 ```bash
 git add apps/server/data/cyberlab.db
 git commit -m "progressi"
 ```
+
+Da lì in poi **è automatico**: quando fermi `pnpm dev` con Ctrl-C, i progressi
+vengono committati e pushati da soli. Se preferisci farlo a mano in un altro
+momento: `pnpm progress:save`.
+
+Il salvataggio automatico è deliberatamente timido:
+
+- **è inerte finché non lo attivi tu.** Finché il database non è tracciato non
+  committa nulla e non pusha nulla: chi clona il repo e lancia `pnpm dev` non si
+  ritrova commit a sorpresa.
+- **tocca solo il database.** Il commit nomina quel file, quindi il lavoro che
+  hai in corso su altri file non viene trascinato dentro.
+- **non risolve i conflitti al posto tuo.** Se due macchine divergono si ferma e
+  ti dice come scegliere quale versione tenere.
 
 Il server ripiega il write-ahead log dentro il `.db` a ogni scrittura e quando
 si chiude, quindi il file che committi è completo: i sidecar `-wal` e `-shm`
