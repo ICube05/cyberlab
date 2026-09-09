@@ -31,17 +31,45 @@ export function FlowDiagram({ block }: { block: FlowDiagramBlock }) {
   const cols = Math.max(...block.nodes.map((n) => n.col)) + 1;
   const rows = Math.max(...block.nodes.map((n) => n.row)) + 1;
 
-  const CELL_W = 150;
   const CELL_H = 78;
-  const GAP_X = 44;
   const GAP_Y = 34;
   const PAD = 16;
-  const nodeW = 128;
   const nodeH = 58;
 
-  const cx = (col: number) => PAD + col * (CELL_W + GAP_X) + nodeW / 2;
+  // Size each node to its own text, then make every column as wide as its
+  // widest node. A fixed 128px box clipped long strings like "azione con
+  // autorità root" or "GET /uploads/avatar.php"; now the box grows to fit the
+  // label (12.5px bold) and the sublabel (10px mono), whichever is wider.
+  const nodeWOf = (n: (typeof block.nodes)[number]) =>
+    Math.max(128, Math.ceil(Math.max((n.label?.length ?? 0) * 7.2, (n.sublabel?.length ?? 0) * 6.2)) + 28);
+
+  // Edge labels are centred in the gap between two nodes. If the gap is
+  // narrower than the label — as it was for long IP:port strings — the label
+  // spills under the node boxes and, since nodes paint after edges, gets
+  // clipped. Widen the column gap to fit the widest same-row label.
+  const rowOf = new Map(block.nodes.map((n) => [n.id, n.row]));
+  const labelW = (s: string) => s.length * 6.3 + 14;
+  const sameRowLabels = block.edges
+    .filter((e) => e.label && rowOf.get(e.from) === rowOf.get(e.to))
+    .map((e) => labelW(e.label!));
+  const GAP_X = Math.max(44, Math.ceil(Math.max(0, ...sameRowLabels)) + 18);
+
+  const colW: number[] = [];
+  for (let c = 0; c < cols; c += 1) {
+    const inCol = block.nodes.filter((n) => n.col === c);
+    colW[c] = inCol.length ? Math.max(...inCol.map(nodeWOf)) : 128;
+  }
+  const colLeft: number[] = [];
+  {
+    let x = PAD;
+    for (let c = 0; c < cols; c += 1) {
+      colLeft[c] = x;
+      x += colW[c]! + GAP_X;
+    }
+  }
+  const cx = (col: number) => colLeft[col]! + colW[col]! / 2;
   const cy = (row: number) => PAD + row * (CELL_H + GAP_Y) + nodeH / 2;
-  const width = PAD * 2 + cols * CELL_W + (cols - 1) * GAP_X;
+  const width = (colLeft[cols - 1] ?? PAD) + (colW[cols - 1] ?? 128) + PAD;
   const height = PAD * 2 + rows * CELL_H + (rows - 1) * GAP_Y;
 
   const active = step >= 0 && block.steps ? new Set(block.steps[step]?.highlight ?? []) : null;
@@ -71,7 +99,10 @@ export function FlowDiagram({ block }: { block: FlowDiagramBlock }) {
         </figcaption>
       )}
       <div className="overflow-x-auto p-2">
-        <svg viewBox={`0 0 ${width} ${height}`} width={width} height={height} className="max-w-full" role="img">
+        {/* No max-w-full: a genuinely wide diagram keeps its labels full-size
+            and the container (overflow-x-auto) scrolls, rather than shrinking
+            every label until it is unreadable. */}
+        <svg viewBox={`0 0 ${width} ${height}`} width={width} height={height} role="img">
           <defs>
             {Object.entries(EDGE_TONE).map(([tone, color]) => (
               <marker key={tone} id={`arrow-${tone}`} viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
@@ -82,9 +113,9 @@ export function FlowDiagram({ block }: { block: FlowDiagramBlock }) {
           {block.edges.map((edge, i) => {
             const from = block.nodes.find((n) => n.id === edge.from)!;
             const to = block.nodes.find((n) => n.id === edge.to)!;
-            const x1 = cx(from.col) + nodeW / 2 - 2;
+            const x1 = cx(from.col) + nodeWOf(from) / 2 - 2;
             const y1 = cy(from.row);
-            const x2 = cx(to.col) - nodeW / 2 + 2;
+            const x2 = cx(to.col) - nodeWOf(to) / 2 + 2;
             const y2 = cy(to.row);
             const tone = edge.tone ?? 'default';
             const dimmed = active && !(active.has(edge.from) && active.has(edge.to));
@@ -99,17 +130,13 @@ export function FlowDiagram({ block }: { block: FlowDiagramBlock }) {
                   strokeDasharray={edge.dashed ? '5 4' : undefined}
                   markerEnd={`url(#arrow-${tone})`}
                 />
-                {edge.label && (
-                  <text x={midX} y={(y1 + y2) / 2 - 6} textAnchor="middle" fontSize={10.5} fill="var(--color-ink-400)" className="mono">
-                    {edge.label}
-                  </text>
-                )}
               </g>
             );
           })}
           {block.nodes.map((node) => {
             const tone = TONE[node.tone ?? 'default']!;
-            const x = cx(node.col) - nodeW / 2;
+            const w = nodeWOf(node);
+            const x = cx(node.col) - w / 2;
             const y = cy(node.row) - nodeH / 2;
             const highlighted = active?.has(node.id);
             const dimmed = active && !highlighted;
@@ -119,7 +146,7 @@ export function FlowDiagram({ block }: { block: FlowDiagramBlock }) {
                 <rect
                   x={x}
                   y={y}
-                  width={nodeW}
+                  width={w}
                   height={nodeH}
                   rx={9}
                   fill={tone.fill}
@@ -134,6 +161,34 @@ export function FlowDiagram({ block }: { block: FlowDiagramBlock }) {
                     {node.sublabel}
                   </text>
                 )}
+              </g>
+            );
+          })}
+          {/* Edge labels last, so they sit on top of the nodes on a chip and
+              are always legible instead of being painted over. */}
+          {block.edges.map((edge, i) => {
+            if (!edge.label) return null;
+            const from = block.nodes.find((n) => n.id === edge.from)!;
+            const to = block.nodes.find((n) => n.id === edge.to)!;
+            const x1 = cx(from.col) + nodeWOf(from) / 2 - 2;
+            const y1 = cy(from.row);
+            const x2 = cx(to.col) - nodeWOf(to) / 2 + 2;
+            const y2 = cy(to.row);
+            const dimmed = active && !(active.has(edge.from) && active.has(edge.to));
+            const lx = (x1 + x2) / 2;
+            // A forward and a return edge between the same two nodes share a
+            // midpoint, so their labels would land on top of each other (the
+            // DNS "dov'è …?" / "93.184.x.x" pair did exactly this). Put the
+            // return (right-to-left) label below the midpoint, the rest above —
+            // by direction, so it works on diagonal edges too, not just rows.
+            const ly = x2 < x1 ? (y1 + y2) / 2 + 18 : (y1 + y2) / 2 - 7;
+            const w = labelW(edge.label);
+            return (
+              <g key={`lbl-${i}`} style={{ opacity: dimmed ? 0.2 : 1, transition: 'opacity 0.3s' }}>
+                <rect x={lx - w / 2} y={ly - 11} width={w} height={16} rx={5} fill="var(--color-abyss-800)" stroke="var(--color-line)" strokeWidth={0.75} />
+                <text x={lx} y={ly} textAnchor="middle" fontSize={10.5} fill="var(--color-ink-200)" className="mono">
+                  {edge.label}
+                </text>
               </g>
             );
           })}
@@ -166,20 +221,28 @@ export function SequenceDiagram({ block }: { block: SequenceBlock }) {
   const leftX = Math.max(GUTTER + 8, maxHalf) + 14;
   const headerH = 52;
   const laneGap = Math.max(laneW, 176);
+  const laneX = (id: string) => leftX + block.actors.findIndex((a) => a.id === id) * laneGap;
+  const rightX = leftX + (block.actors.length - 1) * laneGap;
+  const width = rightX + maxHalf + 16;
+  const bandLeft = GUTTER - 8;
 
-  // Rows grow when a message carries a detail line, so the note has room.
-  const rowH = block.messages.map((m) => (m.detail ? 66 : 46));
+  // A detail line wraps, and an SVG foreignObject does not clip its overflow —
+  // so a note longer than the reserved height used to spill onto the next
+  // message. Reserve height per row from the number of lines the detail needs,
+  // estimated from its length and the width available under the row.
+  const DETAIL_LH = 16;
+  const detailAvailW = Math.max(120, width - bandLeft - 20);
+  const detailCharsPerLine = Math.max(10, Math.floor(detailAvailW / 6.4));
+  const detailLines = (m: (typeof block.messages)[number]) =>
+    m.detail ? Math.max(1, Math.ceil(m.detail.length / detailCharsPerLine)) : 0;
+  const rowH = block.messages.map((m) => (m.detail ? 34 + detailLines(m) * DETAIL_LH + 12 : 44));
   const rowTop: number[] = [];
   let acc = headerH + 8;
   for (const h of rowH) {
     rowTop.push(acc);
     acc += h;
   }
-  const laneX = (id: string) => leftX + block.actors.findIndex((a) => a.id === id) * laneGap;
-  const rightX = leftX + (block.actors.length - 1) * laneGap;
-  const width = rightX + maxHalf + 16;
   const height = acc + 12;
-  const bandLeft = GUTTER - 8;
 
   return (
     <figure className="my-4 overflow-hidden rounded-xl border border-[var(--color-line)] bg-[var(--color-abyss-900)]">
@@ -283,8 +346,8 @@ export function SequenceDiagram({ block }: { block: SequenceBlock }) {
 
                 {/* the authored detail, which the old renderer dropped entirely */}
                 {msg.detail && (
-                  <foreignObject x={bandLeft + 6} y={yLine + 5} width={width - bandLeft - 20} height={rowH[i]! - 30}>
-                    <div style={{ font: '10.5px/1.35 ui-sans-serif, system-ui', color: 'var(--color-ink-500)' }}>
+                  <foreignObject x={bandLeft + 6} y={yLine + 6} width={detailAvailW} height={detailLines(msg) * DETAIL_LH + 4}>
+                    <div style={{ font: `10.5px/${DETAIL_LH}px ui-sans-serif, system-ui`, color: 'var(--color-ink-500)' }}>
                       {msg.detail}
                     </div>
                   </foreignObject>
